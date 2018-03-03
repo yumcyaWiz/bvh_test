@@ -2,6 +2,7 @@
 #define IMAGE_H
 #include <iostream>
 #include <fstream>
+#include "rgb.h"
 class Image {
     public:
         int width;
