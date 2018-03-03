@@ -2,6 +2,7 @@
 #define VEC3_H
 #include <iostream>
 #include <cmath>
+#include <cstdlib>
 class Vec3 {
     public:
         float x;
@@ -35,6 +36,19 @@ class Vec3 {
         };
         Vec3 operator/(float k) const {
             return Vec3(x / k, y / k, z / k);
+        };
+
+        float operator[](int i) const {
+            if(i == 0)
+                return x;
+            else if(i == 1)
+                return y;
+            else if(i == 2)
+                return z;
+            else {
+                std::cerr << "invalid index" << std::endl;
+                std::exit(EXIT_FAILURE);
+            }
         };
 
         float length() const {
