@@ -1,6 +1,8 @@
 #ifndef PRIMITIVE_H
 #define PRIMITIVE_H
 #include "vec3.h"
+#include "ray.h"
+#include "hit.h"
 class Primitive {
     public:
         virtual bool intersect(const Ray& ray, const Hit& hit) const = 0;
