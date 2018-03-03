@@ -38,6 +38,10 @@ class Vec3 {
             return Vec3(x / k, y / k, z / k);
         };
 
+        Vec3 operator-() const {
+            return Vec3(-x, -y, -z);
+        };
+
         float operator[](int i) const {
             if(i == 0)
                 return x;
@@ -74,6 +78,11 @@ inline Vec3 operator/(float k, const Vec3& v) {
 
 inline std::ostream& operator<<(std::ostream& stream, const Vec3& v) {
     stream << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+}
+
+
+inline Vec3 normalize(const Vec3& v) {
+    return v/v.length();
 }
 
 
