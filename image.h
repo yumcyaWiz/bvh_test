@@ -2,6 +2,7 @@
 #define IMAGE_H
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "rgb.h"
 class Image {
     public:
@@ -9,7 +10,12 @@ class Image {
         int height;
         RGB* data;
 
-        Image(int width, int height) : width(width), height(height) {};
+        Image(int width, int height) : width(width), height(height) {
+            data = new RGB[width*height];
+        };
+        ~Image() {
+            delete[] data;
+        };
 
         RGB getPixel(int i, int j) const {
             return data[i + width*j];
@@ -19,7 +25,7 @@ class Image {
         };
 
         void ppm_output(const std::string& filename) const {
-            std::fstream file(filename);
+            std::ofstream file(filename);
             
             file << "P3" << std::endl;
             file << width << " " << height << std::endl;
