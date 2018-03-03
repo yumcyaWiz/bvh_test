@@ -45,3 +45,4 @@ class AABB : Primitive {
             return false;
         };
 };
+#endif
