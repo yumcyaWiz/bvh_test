@@ -21,10 +21,12 @@ int main() {
     Camera cam(Vec3(0, 0, 0), Vec3(0, 0, 1), 1.0);
 
     Primitives prims;
+    /*
     for(int i = 0; i < 1000; i++) {
         prims.add(new Sphere(Vec3(i - 500, 0, 3), 1.0));
     }
-    //prims.loadObj(Vec3(0, -0.1, 0.2), "bunny.obj");
+    */
+    prims.loadObj(Vec3(0, -0.1, 0.2), "bunny.obj");
     prims.constructBVH();
 
     //#pragma omp parallel for schedule(dynamic, 1)
