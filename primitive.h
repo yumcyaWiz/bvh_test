@@ -1,5 +1,7 @@
 #ifndef PRIMITIVE_H
 #define PRIMITIVE_H
+#include <vector>
+#include <memory>
 #include "vec3.h"
 #include "ray.h"
 #include "hit.h"
@@ -88,6 +90,19 @@ class Triangle : Primitive {
             float maxY = std::max(std::max(p1.y, p2.y), p3.y);
             float maxZ = std::max(std::max(p1.z, p2.z), p3.z);
             return AABB(Vec3(minX, minY, minZ), Vec3(maxX, maxY, maxZ));
+        };
+};
+
+
+class Polygon : Primitive {
+    public:
+        std::vector<std::shared_ptr<Triangle>> triangles;
+
+        bool intersect(const Ray& ray, Hit& hit) const {
+            return false;
+        };
+        AABB aabb() const {
+            return AABB();
         };
 };
 #endif
