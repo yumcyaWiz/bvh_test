@@ -4,10 +4,12 @@
 #include "ray.h"
 #include "hit.h"
 #include "primitive.h"
+#include "primitives.h"
 #include "camera.h"
 #include "aabb.h"
 #include "image.h"
 #include "rgb.h"
+
 
 int main() {
     Image img(512, 512);
