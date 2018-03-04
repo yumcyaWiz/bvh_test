@@ -2,6 +2,7 @@
 #define AABB_H
 #include <iostream>
 #include <limits>
+#include <algorithm>
 #include "vec3.h"
 #include "ray.h"
 class AABB {
@@ -42,7 +43,13 @@ class AABB {
 
 
 inline AABB mergeAABB(const AABB& b1, const AABB& b2) {
-    AABB(Vec3(std::min(b1.pMin.x, b2.pMin.x), std::min(b1.pMin.y, b2.pMin.y), std::min(b1.pMin.z, b2.pMin.z)), Vec3(std::max(b1.pMax.x, b2.pMax.x), std::max(b1.pMax.y, b2.pMax.y), std::max(b1.pMax.z, b2.pMax.z)));
+    float minX = std::min(b1.pMin.x, b2.pMin.x);
+    float minY = std::min(b1.pMin.y, b2.pMin.y);
+    float minZ = std::min(b1.pMin.z, b2.pMin.z);
+    float maxX = std::max(b1.pMax.x, b2.pMax.x);
+    float maxY = std::max(b1.pMax.y, b2.pMax.y);
+    float maxZ = std::max(b1.pMax.z, b2.pMax.z);
+    return AABB(Vec3(minX, minY, minZ), Vec3(maxX, maxY, maxZ));
 }
 
 
