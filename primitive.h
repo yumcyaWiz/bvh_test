@@ -5,7 +5,7 @@
 #include "hit.h"
 class Primitive {
     public:
-        virtual bool intersect(const Ray& ray, const Hit& hit) const = 0;
+        virtual bool intersect(const Ray& ray, Hit& hit) const = 0;
 };
 
 
@@ -16,8 +16,27 @@ class Sphere : Primitive {
 
         Sphere(const Vec3& center, float radius) : center(center), radius(radius) {};
 
-        bool intersect(const Ray& ray, const Hit& hit) const {
-            return false;
+        bool intersect(const Ray& ray, Hit& hit) const {
+            float b = dot(ray.direction, ray.origin - center);
+            float c = (ray.origin - center).length2() - radius*radius;
+            float D = b*b - c;
+            if(D < 0)
+                return false;
+            float t1 = -b - std::sqrt(D);
+            float t2 = -b + std::sqrt(D);
+            if(t1 > ray.tmax || t2 <= ray.tmin)
+                return false;
+            float tHit = t1;
+            if(t1 < ray.tmin) {
+                tHit = t2;
+                if(tHit > ray.tmax)
+                    return false;
+            }
+
+            hit.t = tHit;
+            hit.hitPos = ray(tHit);
+            hit.hitNormal = normalize(hit.hitPos - center);
+            return true;
         };
 };
 
@@ -31,7 +50,7 @@ class Triangle : Primitive {
         Triangle() {};
 
         //Moller-Trumbore Algorithm
-        bool intersect(const Ray& ray, const Hit& hit) const {
+        bool intersect(const Ray& ray, Hit& hit) const {
             const float eps = 0.000001;
             Vec3 edge1 = p2 - p1;
             Vec3 edge2 = p3 - p1;
@@ -49,6 +68,8 @@ class Triangle : Primitive {
             if(v < 0.0 || u + v > 1.0)
                 return false;
             float t = f*dot(edge2, q);
+            if(t <= ray.tmin || t > ray.tmax)
+                return false;
             
             hit.t = t;
             hit.hitPos = ray(t);

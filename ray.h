@@ -4,6 +4,8 @@ class Ray {
     public:
         Vec3 origin;
         Vec3 direction;
+        const float tmin = 0.0;
+        const float tmax = 100000;
 
         Ray(const Vec3& origin, const Vec3& direction) : origin(origin), direction(direction) {};
 
