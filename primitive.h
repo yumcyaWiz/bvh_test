@@ -154,7 +154,22 @@ class Polygon : public Primitive {
             return hit;
         };
         AABB aabb() const {
-            return AABB();
+            Vec3 pMin(std::numeric_limits<float>::max());
+            Vec3 pMax(std::numeric_limits<float>::lowest());
+            for(auto itr = triangles.begin(); itr != triangles.end(); itr++) {
+                Vec3 p1 = (*itr)->p1;
+                Vec3 p2 = (*itr)->p2;
+                Vec3 p3 = (*itr)->p3;
+                
+                pMin.x = std::min(pMin.x, std::min(std::min(p1.x, p2.x), p3.x));
+                pMin.y = std::min(pMin.y, std::min(std::min(p1.y, p2.y), p3.y));
+                pMin.z = std::min(pMin.z, std::min(std::min(p1.z, p2.z), p3.z));
+                
+                pMax.x = std::max(pMax.x, std::max(std::max(p1.x, p2.x), p3.x));
+                pMax.y = std::max(pMax.y, std::max(std::max(p1.y, p2.y), p3.y));
+                pMax.z = std::max(pMax.z, std::max(std::max(p1.z, p2.z), p3.z));
+            }
+            return AABB(pMin, pMax);
         };
 
 
