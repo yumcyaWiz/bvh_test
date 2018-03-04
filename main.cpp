@@ -15,8 +15,9 @@ int main() {
     Image img(512, 512);
     Camera cam(Vec3(0, 0, 0), Vec3(0, 0, 1), 1.0);
     Primitives prims;
-    prims.add(new Sphere(Vec3(0, 0, 3), 1.0));
-    prims.add(new Sphere(Vec3(0, -10001, 0), 10000));
+    //prims.add(new Sphere(Vec3(0, 0, 3), 1.0));
+    //prims.add(new Sphere(Vec3(1, 0, 3), 1.0));
+    prims.add(new Triangle(Vec3(0, -1, 3), Vec3(1, 0, 3), Vec3(-1, 0, 3)));
     for(int i = 0; i < 512; i++) {
         for(int j = 0; j < 512; j++) {
             float u = (2.0*i - img.width)/img.width;

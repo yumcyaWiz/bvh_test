@@ -53,8 +53,12 @@ class Triangle : public Primitive {
         Vec3 p1;
         Vec3 p2;
         Vec3 p3;
+        Vec3 normal;
 
         Triangle() {};
+        Triangle(const Vec3& p1, const Vec3& p2, const Vec3& p3) : p1(p1), p2(p2), p3(p3) {
+            normal = -normalize(cross(p2 - p1, p3 - p1));
+        };
 
         //Moller-Trumbore Algorithm
         bool intersect(const Ray& ray, Hit& hit) const {
@@ -63,7 +67,7 @@ class Triangle : public Primitive {
             Vec3 edge2 = p3 - p1;
             Vec3 h = cross(ray.direction, edge2);
             float a = dot(edge1, h);
-            if(a > -eps && a < eps)
+            if(a >= -eps && a <= eps)
                 return false;
             float f = 1/a;
             Vec3 s = ray.origin - p1;
@@ -80,6 +84,7 @@ class Triangle : public Primitive {
             
             hit.t = t;
             hit.hitPos = ray(t);
+            hit.hitNormal = normal;
             return true;
         };
         AABB aabb() const {
