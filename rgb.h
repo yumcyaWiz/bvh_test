@@ -1,6 +1,7 @@
 #ifndef RGB_H
 #define RGB_H
 #include <iostream>
+#include "vec3.h"
 class RGB {
     public:
         float r;
@@ -9,6 +10,7 @@ class RGB {
 
         RGB() { r = g = b = 0; };
         RGB(float r, float g, float b) : r(r), g(g), b(b) {};
+        RGB(const Vec3& v) : r(v.x), g(v.y), b(v.z) {};
 
         RGB operator+(const RGB& col) const {
             return RGB(r + col.r, g + col.g, b + col.b);
