@@ -61,7 +61,7 @@ class Triangle : public Primitive {
 
         Triangle() {};
         Triangle(const Vec3& p1, const Vec3& p2, const Vec3& p3) : p1(p1), p2(p2), p3(p3) {
-            normal = -normalize(cross(p2 - p1, p3 - p1));
+            normal = normalize(cross(p2 - p1, p3 - p1));
         };
 
         //Moller-Trumbore Algorithm

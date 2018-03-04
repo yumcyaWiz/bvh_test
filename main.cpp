@@ -26,7 +26,8 @@ int main() {
         prims.add(new Sphere(Vec3(i - 500, 0, 3), 1.0));
     }
     */
-    prims.loadObj(Vec3(0, -0.1, 0.2), "bunny.obj");
+    prims.loadObj(Vec3(0, -1.5, 4), "teapot.obj");
+    //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     prims.constructBVH();
 
     //#pragma omp parallel for schedule(dynamic, 1)
@@ -37,7 +38,8 @@ int main() {
             Ray ray = cam.getRay(u, v);
             Hit hit;
             if(prims.intersect(ray, hit)) {
-                img.setPixel(i, j, RGB((hit.hitNormal + 1.0)/2.0));
+                RGB col = RGB((-hit.hitNormal + 1.0)/2.0);
+                img.setPixel(i, j, col);
             }
             else {
                 img.setPixel(i, j, RGB(0));

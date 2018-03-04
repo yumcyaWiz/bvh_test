@@ -115,6 +115,8 @@ class Primitives {
             if(!ret)
                 std::exit(1);
 
+            int face_count = 0;
+            int vertex_count = 0;
             for(size_t s = 0; s < shapes.size(); s++) {
                 size_t index_offset = 0;
                 for(size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
@@ -126,11 +128,15 @@ class Primitives {
                         tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
                         tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
                         vertex.push_back(Vec3((float)vx, (float)vy, (float)vz));
+                        vertex_count++;
                     }
                     index_offset += fv;
                     prims.push_back(std::shared_ptr<Triangle>(new Triangle(center + vertex[0], center + vertex[1], center + vertex[2])));
+                    face_count++;
                 }
             }
+            std::cout << "face:" << face_count << std::endl;
+            std::cout << "vertex:" << vertex_count << std::endl;
         };
 
         void constructBVH() {
