@@ -28,7 +28,21 @@ class Primitives {
         };
         void constructBVH() {
         };
-        bool intersect(const Ray& ray) const {
+        bool intersect(const Ray& ray, Hit& res) const {
+            return false;
+        };
+        bool intersect_linear(const Ray& ray, Hit& res) const {
+            bool hit = false;
+            res.t = ray.tmax;
+            for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                Hit res2;
+                if((*itr)->intersect(ray, res2)) {
+                    hit = true;
+                    if(res2.t < res.t)
+                        res = res2;
+                }
+            }
+            return hit;
         };
 };
 #endif

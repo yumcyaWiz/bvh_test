@@ -14,15 +14,17 @@
 int main() {
     Image img(512, 512);
     Camera cam(Vec3(0, 0, 0), Vec3(0, 0, 1), 1.0);
-    Sphere sphere(Vec3(0, 0, 3), 1.0);
+    Primitives prims;
+    prims.add(new Sphere(Vec3(0, 0, 3), 1.0));
+    prims.add(new Sphere(Vec3(0, -10001, 0), 10000));
     for(int i = 0; i < 512; i++) {
         for(int j = 0; j < 512; j++) {
             float u = (2.0*i - img.width)/img.width;
             float v = (2.0*j - img.height)/img.height;
             Ray ray = cam.getRay(u, v);
             Hit hit;
-            if(sphere.intersect(ray, hit))
-                img.setPixel(i, j, (hit.hitNormal + 1.0)/2.0);
+            if(prims.intersect_linear(ray, hit))
+                img.setPixel(i, j, RGB((hit.hitNormal + 1.0)/2.0));
             else
                 img.setPixel(i, j, RGB(0));
         }

@@ -13,7 +13,7 @@ class Primitive {
 };
 
 
-class Sphere : Primitive {
+class Sphere : public Primitive {
     public:
         Vec3 center;
         float radius;
@@ -48,7 +48,7 @@ class Sphere : Primitive {
 };
 
 
-class Triangle : Primitive {
+class Triangle : public Primitive {
     public:
         Vec3 p1;
         Vec3 p2;
@@ -94,7 +94,7 @@ class Triangle : Primitive {
 };
 
 
-class Polygon : Primitive {
+class Polygon : public Primitive {
     public:
         std::vector<std::shared_ptr<Triangle>> triangles;
 

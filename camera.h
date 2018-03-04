@@ -14,7 +14,7 @@ class Camera {
             camPos = _camPos;
             camForward = normalize(_camForward);
             camRight = -normalize(cross(camForward, Vec3(0, 1, 0)));
-            camUp = -normalize(cross(camRight, camForward));
+            camUp = normalize(cross(camRight, camForward));
             focus = _focus;
         };
 
