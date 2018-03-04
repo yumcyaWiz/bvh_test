@@ -132,16 +132,17 @@ class Polygon : public Primitive {
                         tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
                         tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
                         tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
-                        vertex.push_back(Vec3(vx, vy, vz));
+                        vertex.push_back(Vec3((float)vx, (float)vy, (float)vz));
                     }
+                    index_offset += fv;
                     triangles.push_back(std::shared_ptr<Triangle>(new Triangle(center + vertex[0], center + vertex[1], center + vertex[2])));
                 }
             }
         };
 
-
         bool intersect(const Ray& ray, Hit& res) const {
             bool hit = false;
+            res.t = ray.tmax;
             for(auto itr = triangles.begin(); itr != triangles.end(); itr++) {
                 Hit res2;
                 if((*itr)->intersect(ray, res2)) {
@@ -154,6 +155,15 @@ class Polygon : public Primitive {
         };
         AABB aabb() const {
             return AABB();
+        };
+
+
+        //test
+        void test() const {
+            for(auto itr = triangles.begin(); itr != triangles.end(); itr++) {
+                std::cout << "p1:" << (*itr)->p1 << " p2:" << (*itr)->p2 << " p3:" << (*itr)->p3 << std::endl;
+                std::cout << "normal:" << (*itr)->normal << std::endl;
+            }
         };
 };
 #endif
