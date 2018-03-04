@@ -2,6 +2,10 @@
 #define PRIMITIVE_H
 #include <vector>
 #include <memory>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
 #include "vec3.h"
 #include "ray.h"
 #include "hit.h"
@@ -101,10 +105,52 @@ class Triangle : public Primitive {
 
 class Polygon : public Primitive {
     public:
+        Vec3 center;
         std::vector<std::shared_ptr<Triangle>> triangles;
 
-        bool intersect(const Ray& ray, Hit& hit) const {
-            return false;
+        Polygon() {};
+        //using tinyobj loader
+        Polygon(const Vec3& center, const std::string& filename) : center(center) {
+            tinyobj::attrib_t attrib;
+            std::vector<tinyobj::shape_t> shapes;
+            std::vector<tinyobj::material_t> materials;
+
+            std::string err;
+            bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename.c_str());
+            if(!err.empty())
+                std::cerr << err << std::endl;
+            if(!ret)
+                std::exit(1);
+
+            for(size_t s = 0; s < shapes.size(); s++) {
+                size_t index_offset = 0;
+                for(size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+                    int fv = shapes[s].mesh.num_face_vertices[f];
+                    std::vector<Vec3> vertex;
+                    for(size_t v = 0; v < fv; v++) {
+                        tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+                        tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
+                        tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
+                        tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
+                        vertex.push_back(Vec3(vx, vy, vz));
+                    }
+                    triangles.push_back(std::shared_ptr<Triangle>(new Triangle(center + vertex[0], center + vertex[1], center + vertex[2])));
+                }
+            }
+        };
+
+
+        bool intersect(const Ray& ray, Hit& res) const {
+            bool hit = false;
+            for(auto itr = triangles.begin(); itr != triangles.end(); itr++) {
+                Hit res2;
+                if((*itr)->intersect(ray, res2)) {
+                    hit = true;
+                    if(res2.t < res.t)
+                        res = res2;
+                }
+            }
+            return hit;
         };
         AABB aabb() const {
             return AABB();

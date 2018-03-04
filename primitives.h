@@ -8,12 +8,26 @@
 
 class BVH_node {
     public:
-        BVH_node* left;
-        BVH_node* right;
-        std::vector<std::shared_ptr<Primitive>> prims;
+        int left; //left child index
+        int right; //right child index
+        std::vector<std::shared_ptr<Primitive>> prims; //primitives(left node only)
 
-        BVH_node() : left(nullptr), right(nullptr) {};
-        BVH_node(BVH_node* left, BVH_node* right, std::shared_ptr<Primitive> prim) : left(left), right(right), prims(prims) {};
+        BVH_node() : left(-1), right(-1) {};
+};
+class BVH {
+    public:
+        BVH_node* nodes;
+        int node_count;
+
+        BVH() {
+            nodes = new BVH_node[10000];
+            node_count = 0;
+        };
+
+        void construct(const std::vector<std::shared_ptr<Primitive>>& prims) {
+        };
+        bool intersect(const Ray& ray, Hit& res) const {
+        };
 };
 
 

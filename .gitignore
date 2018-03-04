@@ -2,3 +2,5 @@
 *.ppm
 *.png
 *.jpg
+*.obj
+tiny_obj_loader.h
