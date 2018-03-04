@@ -10,10 +10,10 @@ class BVH_node {
     public:
         BVH_node* left;
         BVH_node* right;
-        std::shared_ptr<Primitive> prim;
+        std::vector<std::shared_ptr<Primitive>> prims;
 
-        BVH_node() : left(nullptr), right(nullptr), prim(nullptr) {};
-        BVH_node(BVH_node* left, BVH_node* right, std::shared_ptr<Primitive> prim) : left(left), right(right), prim(prim) {};
+        BVH_node() : left(nullptr), right(nullptr) {};
+        BVH_node(BVH_node* left, BVH_node* right, std::shared_ptr<Primitive> prim) : left(left), right(right), prims(prims) {};
 };
 
 

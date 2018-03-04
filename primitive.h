@@ -3,9 +3,11 @@
 #include "vec3.h"
 #include "ray.h"
 #include "hit.h"
+#include "aabb.h"
 class Primitive {
     public:
         virtual bool intersect(const Ray& ray, Hit& hit) const = 0;
+        virtual AABB aabb() const = 0;
 };
 
 
@@ -37,6 +39,9 @@ class Sphere : Primitive {
             hit.hitPos = ray(tHit);
             hit.hitNormal = normalize(hit.hitPos - center);
             return true;
+        };
+        AABB aabb() const {
+            return AABB(center - Vec3(radius), center + Vec3(radius));
         };
 };
 
@@ -74,6 +79,15 @@ class Triangle : Primitive {
             hit.t = t;
             hit.hitPos = ray(t);
             return true;
+        };
+        AABB aabb() const {
+            float minX = std::min(std::min(p1.x, p2.x), p3.x);
+            float minY = std::min(std::min(p1.y, p2.y), p3.y);
+            float minZ = std::min(std::min(p1.z, p2.z), p3.z);
+            float maxX = std::max(std::max(p1.x, p2.x), p3.x);
+            float maxY = std::max(std::max(p1.y, p2.y), p3.y);
+            float maxZ = std::max(std::max(p1.z, p2.z), p3.z);
+            return AABB(Vec3(minX, minY, minZ), Vec3(maxX, maxY, maxZ));
         };
 };
 #endif
