@@ -21,18 +21,20 @@ int main() {
     Camera cam(Vec3(0, 0, 0), Vec3(0, 0, 1), 1.0);
 
     Primitives prims;
-    //prims.add(new Sphere(Vec3(0, 0, 3), 1.0));
-    //prims.add(new Sphere(Vec3(1, 0, 3), 1.0));
-    prims.add(new Polygon(Vec3(0, -0.1, 0.2), "bunny.obj"));
+    for(int i = 0; i < 3; i++) {
+        prims.add(new Sphere(Vec3(i - 1.5, 0, 3), 1.0));
+    }
+    //prims.loadObj(Vec3(0, -0.1, 0.2), "bunny.obj");
+    prims.constructBVH();
 
-    #pragma omp parallel for schedule(dynamic, 1)
+    //#pragma omp parallel for schedule(dynamic, 1)
     for(int i = 0; i < 512; i++) {
         for(int j = 0; j < 512; j++) {
             float u = (2.0*i - img.width)/img.width;
             float v = (2.0*j - img.height)/img.height;
             Ray ray = cam.getRay(u, v);
             Hit hit;
-            if(prims.intersect_linear(ray, hit)) {
+            if(prims.intersect(ray, hit)) {
                 img.setPixel(i, j, RGB((hit.hitNormal + 1.0)/2.0));
             }
             else {

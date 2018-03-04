@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "ray.h"
 #include "primitive.h"
+#include "sampler.h"
 
 
 class BVH_node {
@@ -20,18 +21,32 @@ class BVH_node {
             prim = _prim;
         };
         BVH_node(std::vector<std::shared_ptr<Primitive>>& prims) {
-            std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                    return x->aabb().pMin.x < y->aabb().pMin.x;
-                    });
+            if(prims.size() == 0) {
+                std::cerr << "prims is empty" << std::endl;
+                std::exit(1);
+            }
+            
+            int axis = (int)(3*rnd());
+            if(axis == 0) {
+                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                        return x->aabb().pMin.x < y->aabb().pMin.x;
+                        });
+            }
+            else if(axis == 1) {
+                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                        return x->aabb().pMin.y < y->aabb().pMin.y;
+                        });
+            }
+            else if(axis == 2) {
+                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                        return x->aabb().pMin.z < y->aabb().pMin.z;
+                        });
+            }
 
             if(prims.size() == 1) {
                 left = right = nullptr;
                 prim = prims[0];
                 bbox = prim->aabb();
-            }
-            else if(prims.size() == 2) {
-                left = new BVH_node(prims[0]);
-                right = new BVH_node(prims[1]);
             }
             else {
                 std::size_t const half_size = prims.size()/2;
@@ -39,15 +54,41 @@ class BVH_node {
                 std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
                 left = new BVH_node(left_prims);
                 right = new BVH_node(right_prims);
+                AABB bbox_left = left->bbox;
+                AABB bbox_right = right->bbox;
+                bbox = mergeAABB(bbox_left, bbox_right);
             }
-            
-            AABB bbox_left = left->bbox;
-            AABB bbox_right = right->bbox;
-            bbox = mergeAABB(bbox_left, bbox_right);
         };
 
         bool intersect(const Ray& ray, Hit& res) const {
-            return true;
+            if(left == nullptr && right == nullptr)
+                return prim->intersect(ray, res);
+
+            if(!bbox.intersect(ray))
+                return false;
+
+            Hit res_left;
+            Hit res_right;
+            bool hit_left = left->intersect(ray, res_left);
+            bool hit_right = right->intersect(ray, res_right);
+
+            if(hit_left && hit_right) {
+                if(res_left.t < res_right.t)
+                    res = res_left;
+                else
+                    res = res_right;
+                return true;
+            }
+            else if(hit_left) {
+                res = res_left;
+                return true;
+            }
+            else if(hit_right) {
+                res = res_right;
+                return true;
+            }
+            else
+                return false;
         };
 };
 
