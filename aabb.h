@@ -9,17 +9,17 @@ class AABB {
     public:
         Vec3 pMin;
         Vec3 pMax;
+        Vec3 center;
 
         AABB() {
             float maxInf = std::numeric_limits<float>::max();
             float minInf = std::numeric_limits<float>::lowest();
             pMin = Vec3(maxInf, maxInf, maxInf);
             pMax = Vec3(minInf, minInf, minInf);
+            center = Vec3(0);
         };
-        AABB(const Vec3& p1, const Vec3& p2) : pMin(std::min(p1.x, p2.x), std::min(p1.y, p2.y), std::min(p1.z, p2.z)), pMax(std::max(p1.x, p2.x), std::max(p1.y, p2.y), std::max(p1.z, p2.z)) {};
-
-        Vec3 center() const {
-            return (pMin + pMax)/2;
+        AABB(const Vec3& p1, const Vec3& p2) : pMin(std::min(p1.x, p2.x), std::min(p1.y, p2.y), std::min(p1.z, p2.z)), pMax(std::max(p1.x, p2.x), std::max(p1.y, p2.y), std::max(p1.z, p2.z)) {
+            center = (pMin + pMax)/2;
         };
 
         float surfaceArea() const {

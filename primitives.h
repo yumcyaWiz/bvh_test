@@ -9,100 +9,104 @@
 #include "sampler.h"
 
 
-class BVH_node {
-    public:
-        BVH_node* left;
-        BVH_node* right;
-        AABB bbox;
-        std::shared_ptr<Primitive> prim;
+class BVH {
+    private:
+        struct BVH_node {
+            public:
+                BVH_node* left; //left child pointer
+                BVH_node* right; //right child pointer
+                AABB bbox; //node bounding box
+                std::shared_ptr<Primitive> prim; //node primitive(leaf node only)
 
-        BVH_node(std::shared_ptr<Primitive> _prim) {
-            left = right = nullptr;
-            prim = _prim;
+                BVH_node(std::shared_ptr<Primitive> _prim) {
+                    left = right = nullptr;
+                    prim = _prim;
+                };
+                BVH_node(std::vector<std::shared_ptr<Primitive>>& prims) {
+                    if(prims.size() == 0) {
+                        std::cerr << "prims is empty" << std::endl;
+                        std::exit(1);
+                    }
+                    
+                    //randomly choose splitting axis
+                    int axis = (int)(3*rnd());
+                    if(axis == 0) {
+                        std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                                return x->aabb().center.x < y->aabb().center.x;
+                                });
+                    }
+                    else if(axis == 1) {
+                        std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                                return x->aabb().center.y < y->aabb().center.y;
+                                });
+                    }
+                    else if(axis == 2) {
+                        std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                                return x->aabb().center.z < y->aabb().center.z;
+                                });
+                    }
+
+                    if(prims.size() == 1) {
+                        left = right = nullptr;
+                        prim = prims[0];
+                        bbox = prim->aabb();
+                    }
+                    else {
+                        std::size_t const half_size = prims.size()/2;
+                        std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
+                        std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
+                        left = new BVH_node(left_prims);
+                        right = new BVH_node(right_prims);
+                        AABB bbox_left = left->bbox;
+                        AABB bbox_right = right->bbox;
+                        bbox = mergeAABB(bbox_left, bbox_right);
+                    }
+                };
+
+                bool intersect(const Ray& ray, Hit& res) const {
+                    if(left == nullptr && right == nullptr)
+                        return prim->intersect(ray, res);
+
+                    if(!bbox.intersect(ray))
+                        return false;
+
+                    Hit res_left;
+                    Hit res_right;
+                    bool hit_left = left->intersect(ray, res_left);
+                    bool hit_right = right->intersect(ray, res_right);
+
+                    if(hit_left && hit_right) {
+                        if(res_left.t < res_right.t)
+                            res = res_left;
+                        else
+                            res = res_right;
+                        return true;
+                    }
+                    else if(hit_left) {
+                        res = res_left;
+                        return true;
+                    }
+                    else if(hit_right) {
+                        res = res_right;
+                        return true;
+                    }
+                    else
+                        return false;
+                };
         };
-        BVH_node(std::vector<std::shared_ptr<Primitive>>& prims) {
-            if(prims.size() == 0) {
-                std::cerr << "prims is empty" << std::endl;
-                std::exit(1);
-            }
-            
-            int axis = (int)(3*rnd());
-            if(axis == 0) {
-                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().center().x < y->aabb().center().x;
-                        });
-            }
-            else if(axis == 1) {
-                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().center().y < y->aabb().center().y;
-                        });
-            }
-            else if(axis == 2) {
-                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().center().z < y->aabb().center().z;
-                        });
-            }
 
-            if(prims.size() == 1) {
-                left = right = nullptr;
-                prim = prims[0];
-                bbox = prim->aabb();
-            }
-            else {
-                std::size_t const half_size = prims.size()/2;
-                std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
-                std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
-                left = new BVH_node(left_prims);
-                right = new BVH_node(right_prims);
-                AABB bbox_left = left->bbox;
-                AABB bbox_right = right->bbox;
-                bbox = mergeAABB(bbox_left, bbox_right);
-            }
+
+    public:
+        BVH_node* bvh_root;
+
+        BVH() {};
+        BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
+            bvh_root = new BVH_node(prims);
         };
 
         bool intersect(const Ray& ray, Hit& res) const {
-            if(left == nullptr && right == nullptr)
-                return prim->intersect(ray, res);
-
-            if(!bbox.intersect(ray))
-                return false;
-
-            Hit res_left;
-            Hit res_right;
-            bool hit_left = left->intersect(ray, res_left);
-            bool hit_right = right->intersect(ray, res_right);
-
-            if(hit_left && hit_right) {
-                if(res_left.t < res_right.t)
-                    res = res_left;
-                else
-                    res = res_right;
-                return true;
-            }
-            else if(hit_left) {
-                res = res_left;
-                return true;
-            }
-            else if(hit_right) {
-                res = res_right;
-                return true;
-            }
-            else
-                return false;
+            return bvh_root->intersect(ray, res);
         };
-};
-class BVH {
-  public:
-    BVH_node* bvh_root;
-
-    BVH() {};
-    BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
-      bvh_root = new BVH_node(prims);
-    };
-
-    bool intersect(const Ray& ray, Hit& res) const {
-      return bvh_root->intersect(ray, res);
-    };
 };
 
 
@@ -165,17 +169,17 @@ class BVH_array {
             int axis = (int)(3*rnd());
             if(axis == 0) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().center().x < y->aabb().center().x;
+                        return x->aabb().center.x < y->aabb().center.x;
                         });
             }
             else if(axis == 1) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().center().y < y->aabb().center().y;
+                        return x->aabb().center.y < y->aabb().center.y;
                         });
             }
             else if(axis == 2) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().center().z < y->aabb().center().z;
+                        return x->aabb().center.z < y->aabb().center.z;
                         });
             }
 
