@@ -135,7 +135,7 @@ class BVH_array {
 
         BVH_array() {};
         BVH_array(std::vector<std::shared_ptr<Primitive>>& prims) {
-            nodes = new std::shared_ptr<BVH_array_node>[3*prims.size()];
+            nodes = new std::shared_ptr<BVH_array_node>[4*prims.size()];
             node_count = 0;
             leaf_count = 0;
             makeBVHnode(prims, 0);
