@@ -1,2 +1,2 @@
 all:
-	g++ -std=c++14 -fopenmp main.cpp
+	g++ -std=c++14 -Wall -fopenmp main.cpp

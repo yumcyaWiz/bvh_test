@@ -55,5 +55,6 @@ inline AABB mergeAABB(const AABB& b1, const AABB& b2) {
 
 inline std::ostream& operator<<(std::ostream& stream, const AABB& aabb) {
     stream << "pMin:" << aabb.pMin << " pMax:" << aabb.pMax;
+    return stream;
 }
 #endif

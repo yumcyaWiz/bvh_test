@@ -91,12 +91,25 @@ class BVH_node {
                 return false;
         };
 };
+class BVH {
+  public:
+    BVH_node* bvh_root;
+
+    BVH() {};
+    BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
+      bvh_root = new BVH_node(prims);
+    };
+
+    bool intersect(const Ray& ray, Hit& res) const {
+      return bvh_root->intersect(ray, res);
+    };
+};
 
 
 class Primitives {
     public:
         std::vector<std::shared_ptr<Primitive>> prims;
-        BVH_node* bvh_root;
+        BVH bvh;
 
         Primitives() {};
 
@@ -140,10 +153,10 @@ class Primitives {
         };
 
         void constructBVH() {
-            bvh_root = new BVH_node(prims);
+            bvh = BVH(prims);
         };
         bool intersect(const Ray& ray, Hit& res) const {
-            return bvh_root->intersect(ray, res);
+            bvh.intersect(ray, res);
         };
         bool intersect_linear(const Ray& ray, Hit& res) const {
             bool hit = false;
