@@ -3,7 +3,6 @@
 #include <vector>
 #include <cstdlib>
 #include <omp.h>
-#include <chrono>
 
 #include "vec3.h"
 #include "ray.h"
@@ -15,11 +14,12 @@
 #include "image.h"
 #include "rgb.h"
 #include "util.h"
+#include "timer.h"
 
 
 int main() {
     Image img(512, 512);
-    Camera cam(Vec3(0, 0, 0), Vec3(0, 0, 1), 1.0);
+    Camera cam(Vec3(0, 100, 0), Vec3(1, 0, 0), 1.0);
 
     Primitives prims;
     
@@ -29,12 +29,16 @@ int main() {
     }
     */
     
-    prims.loadObj(Vec3(0, -1.5, 4), "teapot.obj");
+    prims.loadObj(Vec3(0, 0, 0), "sponza_simple.obj");
     //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
+    Timer timer;
+    timer.start();
     prims.constructBVH();
-
+    timer.stop();
     
-    //#pragma omp parallel for schedule(dynamic, 1)
+
+    timer.start();
+    #pragma omp parallel for schedule(dynamic, 1)
     for(int i = 0; i < 512; i++) {
         for(int j = 0; j < 512; j++) {
             float u = (2.0*i - img.width)/img.width;
@@ -52,6 +56,6 @@ int main() {
         if(omp_get_thread_num() == 0)
             std::cout << progressbar(i, 512) << " " << percentage(i, 512) << "\r" << std::flush;
     }
-    std::cout << "a" << std::endl;
+    timer.stop();
     img.ppm_output("output.ppm");
 }

@@ -29,17 +29,17 @@ class BVH_node {
             int axis = (int)(3*rnd());
             if(axis == 0) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().pMin.x < y->aabb().pMin.x;
+                        return x->aabb().center().x < y->aabb().center().x;
                         });
             }
             else if(axis == 1) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().pMin.y < y->aabb().pMin.y;
+                        return x->aabb().center().y < y->aabb().center().y;
                         });
             }
             else if(axis == 2) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().pMin.z < y->aabb().pMin.z;
+                        return x->aabb().center().z < y->aabb().center().z;
                         });
             }
 
@@ -165,17 +165,17 @@ class BVH_array {
             int axis = (int)(3*rnd());
             if(axis == 0) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().pMin.x < y->aabb().pMin.x;
+                        return x->aabb().center().x < y->aabb().center().x;
                         });
             }
             else if(axis == 1) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().pMin.y < y->aabb().pMin.y;
+                        return x->aabb().center().y < y->aabb().center().y;
                         });
             }
             else if(axis == 2) {
                 std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                        return x->aabb().pMin.z < y->aabb().pMin.z;
+                        return x->aabb().center().z < y->aabb().center().z;
                         });
             }
 
@@ -195,6 +195,9 @@ class BVH_array {
             
             //make current node
             nodes[node_index] = std::shared_ptr<BVH_array_node>(new BVH_array_node(mergedAABB));
+        };
+        //make nodes using Surface Area Heuristics(SAH)
+        void makeBVHnode_SAH(std::vector<std::shared_ptr<Primitive>>& prims, int node_index) {
         };
 
         int getLeftIndex(int i) const {
@@ -248,7 +251,7 @@ class BVH_array {
 class Primitives {
     public:
         std::vector<std::shared_ptr<Primitive>> prims;
-        BVH_array bvh;
+        BVH bvh;
 
         Primitives() {};
 
@@ -292,7 +295,7 @@ class Primitives {
         };
 
         void constructBVH() {
-            bvh = BVH_array(prims);
+            bvh = BVH(prims);
         };
         bool intersect(const Ray& ray, Hit& res) const {
             return bvh.intersect(ray, res);
