@@ -9,6 +9,10 @@
 #include "sampler.h"
 
 
+static int node_count = 0;
+static int leaf_count = 0;
+
+
 class BVH {
     private:
         struct BVH_node {
@@ -23,9 +27,18 @@ class BVH {
                     prim = _prim;
                 };
                 BVH_node(std::vector<std::shared_ptr<Primitive>>& prims) {
+                    node_count++;
+
                     if(prims.size() == 0) {
                         std::cerr << "prims is empty" << std::endl;
                         std::exit(1);
+                    }
+                    if(prims.size() == 1) {
+                        leaf_count++;
+                        left = right = nullptr;
+                        prim = prims[0];
+                        bbox = prim->aabb();
+                        return;
                     }
                     
                     //randomly choose splitting axis
@@ -46,21 +59,14 @@ class BVH {
                                 });
                     }
 
-                    if(prims.size() == 1) {
-                        left = right = nullptr;
-                        prim = prims[0];
-                        bbox = prim->aabb();
-                    }
-                    else {
-                        std::size_t const half_size = prims.size()/2;
-                        std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
-                        std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
-                        left = new BVH_node(left_prims);
-                        right = new BVH_node(right_prims);
-                        AABB bbox_left = left->bbox;
-                        AABB bbox_right = right->bbox;
-                        bbox = mergeAABB(bbox_left, bbox_right);
-                    }
+                    std::size_t const half_size = prims.size()/2;
+                    std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
+                    std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
+                    left = new BVH_node(left_prims);
+                    right = new BVH_node(right_prims);
+                    AABB bbox_left = left->bbox;
+                    AABB bbox_right = right->bbox;
+                    bbox = mergeAABB(bbox_left, bbox_right);
                 };
 
                 bool intersect(const Ray& ray, Hit& res) const {
@@ -102,6 +108,10 @@ class BVH {
         BVH() {};
         BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
             bvh_root = new BVH_node(prims);
+            std::cout << "BVH Construction Finished!" << std::endl;
+            std::cout << "BVH nodes:" << node_count << std::endl;
+            std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
+            std::cout << "BVH leaf/node:" << (float)leaf_count/node_count * 100 << "%" << std::endl;
         };
 
         bool intersect(const Ray& ray, Hit& res) const {
@@ -146,6 +156,7 @@ class BVH_array {
             std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "BVH nodes:" << node_count << std::endl;
             std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
+            std::cout << "BVH leaf/node:" << (float)leaf_count/node_count * 100 << "%" << std::endl;
         };
 
         void makeBVHnode(std::vector<std::shared_ptr<Primitive>>& prims, int node_index) {
