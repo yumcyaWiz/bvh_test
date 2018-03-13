@@ -106,10 +106,149 @@ class BVH {
 };
 
 
+class BVH_array {
+    private:
+        struct BVH_array_node {
+            AABB aabb;
+            std::shared_ptr<Primitive> prim;
+            bool leaf;
+
+            BVH_array_node(const AABB& aabb) : aabb(aabb), leaf(false) {};
+            BVH_array_node(std::shared_ptr<Primitive> _prim) {
+                prim = _prim;
+                aabb = _prim->aabb();
+                leaf = true;
+            };
+
+            bool intersect(const Ray& ray, Hit& res) const {
+                if(leaf)
+                    return prim->intersect(ray, res);
+                else
+                    return aabb.intersect(ray);
+            }
+        };
+
+    public:
+        std::shared_ptr<BVH_array_node>* nodes;
+        int node_count;
+        int leaf_count;
+
+        BVH_array() {};
+        BVH_array(std::vector<std::shared_ptr<Primitive>>& prims) {
+            nodes = new std::shared_ptr<BVH_array_node>[3*prims.size()];
+            node_count = 0;
+            leaf_count = 0;
+            makeBVHnode(prims, 0);
+            std::cout << "BVH Construction Finished!" << std::endl;
+            std::cout << "BVH nodes:" << node_count << std::endl;
+            std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
+        };
+
+        void makeBVHnode(std::vector<std::shared_ptr<Primitive>>& prims, int node_index) {
+            node_count++;
+
+            //if primitives array is empty
+            if(prims.size() == 0) {
+                std::cerr << "prims is empty" << std::endl;
+                std::exit(1);
+            }
+            //if primitives array has only one element
+            //make current node as leaf
+            if(prims.size() == 1) {
+                leaf_count++;
+                nodes[node_index] = std::shared_ptr<BVH_array_node>(new BVH_array_node(prims[0]));
+                return;
+            }
+
+            //choose random splitting axis
+            //and sort primitives by the chosen axis
+            int axis = (int)(3*rnd());
+            if(axis == 0) {
+                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                        return x->aabb().pMin.x < y->aabb().pMin.x;
+                        });
+            }
+            else if(axis == 1) {
+                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                        return x->aabb().pMin.y < y->aabb().pMin.y;
+                        });
+            }
+            else if(axis == 2) {
+                std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                        return x->aabb().pMin.z < y->aabb().pMin.z;
+                        });
+            }
+
+            //split primitives array in half
+            std::size_t const half_size = prims.size()/2;
+            std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
+            std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
+
+            //recursively call makeBVHnode for left and right children
+            int left = getLeftIndex(node_index);
+            int right = getRightIndex(node_index);
+            makeBVHnode(left_prims, left); 
+            makeBVHnode(right_prims, right); 
+
+            //merge left and right children bounding box
+            AABB mergedAABB = mergeAABB(nodes[left]->aabb, nodes[right]->aabb);
+            
+            //make current node
+            nodes[node_index] = std::shared_ptr<BVH_array_node>(new BVH_array_node(mergedAABB));
+        };
+
+        int getLeftIndex(int i) const {
+            return 2*i + 1;
+        };
+        int getRightIndex(int i) const {
+            return 2*i + 2;
+        };
+
+        bool intersect(const Ray& ray, Hit& res) const {
+            return intersect_node(ray, res, 0);
+        };
+        bool intersect_node(const Ray& ray, Hit& res, int node_index) const {
+            //if this node is leaf
+            if(nodes[node_index]->leaf) {
+                return nodes[node_index]->prim->intersect(ray, res);
+            }
+
+            //ray hits this node?
+            if(!nodes[node_index]->aabb.intersect(ray))
+                return false;
+
+            //ray hits left or right chilren node?
+            Hit res_left; 
+            Hit res_right;
+            bool hit_left = intersect_node(ray, res_left, getLeftIndex(node_index));
+            bool hit_right = intersect_node(ray, res_right, getRightIndex(node_index));
+
+            if(hit_left && hit_right) {
+                if(res_left.t < res_right.t)
+                    res = res_left;
+                else
+                    res = res_right;
+                return true;
+            }
+            else if(hit_left) {
+                res = res_left;
+                return true;
+            }
+            else if(hit_right) {
+                res = res_right;
+                return true;
+            }
+            else {
+                return false;
+            }
+        };
+};
+
+
 class Primitives {
     public:
         std::vector<std::shared_ptr<Primitive>> prims;
-        BVH bvh;
+        BVH_array bvh;
 
         Primitives() {};
 
@@ -153,10 +292,10 @@ class Primitives {
         };
 
         void constructBVH() {
-            bvh = BVH(prims);
+            bvh = BVH_array(prims);
         };
         bool intersect(const Ray& ray, Hit& res) const {
-            bvh.intersect(ray, res);
+            return bvh.intersect(ray, res);
         };
         bool intersect_linear(const Ray& ray, Hit& res) const {
             bool hit = false;

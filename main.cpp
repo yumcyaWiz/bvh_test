@@ -48,5 +48,6 @@ int main() {
         if(omp_get_thread_num() == 0)
             std::cout << progressbar(i, 512) << " " << percentage(i, 512) << "\r" << std::flush;
     }
+    std::cout << "a" << std::endl;
     img.ppm_output("output.ppm");
 }

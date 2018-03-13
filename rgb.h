@@ -53,5 +53,6 @@ inline RGB operator/(float k, const RGB& col) {
 
 inline std::ostream& operator<<(std::ostream& stream, const RGB& col) {
     stream << "(" << col.r << ", " << col.g << ", " << col.b << ")";
+    return stream;
 }
 #endif
