@@ -19,7 +19,7 @@
 
 int main() {
     Image img(512, 512);
-    Camera cam(Vec3(0, 100, 0), Vec3(1, 0, 0), 1.0);
+    Camera cam(Vec3(0, 5, -10), Vec3(0, 0, 1), 1.0);
 
     Primitives prims;
     
@@ -29,7 +29,7 @@ int main() {
     }
     */
     
-    prims.loadObj(Vec3(0, 0, 0), "sponza_simple.obj");
+    prims.loadObj(Vec3(0, 0, 0), "dragon.obj");
     //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     Timer timer;
     timer.start();
@@ -44,9 +44,11 @@ int main() {
             float u = (2.0*i - img.width)/img.width;
             float v = (2.0*j - img.height)/img.height;
             Ray ray = cam.getRay(u, v);
-            Hit hit;
-            if(prims.intersect(ray, hit)) {
-                RGB col = RGB((-hit.hitNormal + 1.0)/2.0);
+            Hit res;
+            if(prims.intersect(ray, res)) {
+                RGB col = jetcolormap((float)ray.hit_count/400);
+                //col = RGB((res.hitNormal + 1)/2);
+                //col = ray.factor * RGB((res.hitNormal + 1.0f)/2.0f);
                 img.setPixel(i, j, col);
             }
             else {

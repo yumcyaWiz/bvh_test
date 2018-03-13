@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include "rgb.h"
+#include "util.h"
 class Image {
     public:
         int width;
@@ -33,7 +34,7 @@ class Image {
             for(int j = 0; j < height; j++) {
                 for(int i = 0; i < width; i++) {
                     RGB c = data[i + width*j];
-                    file << (int)(255*c.r) << " " << (int)(255*c.g) << " " << (int)(255*c.b) << std::endl;
+                    file << clamp((int)(255*c.r), 0, 255) << " " << clamp((int)(255*c.g), 0, 255) << " " << clamp((int)(255*c.b), 0, 255) << std::endl;
                 }
             }
 

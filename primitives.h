@@ -69,12 +69,14 @@ class BVH {
                     bbox = mergeAABB(bbox_left, bbox_right);
                 };
 
-                bool intersect(const Ray& ray, Hit& res) const {
+                bool intersect(Ray& ray, Hit& res) const {
                     if(left == nullptr && right == nullptr)
                         return prim->intersect(ray, res);
 
                     if(!bbox.intersect(ray))
                         return false;
+                    ray.hit_count++;
+                    ray.factor *= 0.99f;
 
                     Hit res_left;
                     Hit res_right;
@@ -114,7 +116,7 @@ class BVH {
             std::cout << "BVH leaf/node:" << (float)leaf_count/node_count * 100 << "%" << std::endl;
         };
 
-        bool intersect(const Ray& ray, Hit& res) const {
+        bool intersect(Ray& ray, Hit& res) const {
             return bvh_root->intersect(ray, res);
         };
 };
@@ -312,7 +314,7 @@ class Primitives {
         void constructBVH() {
             bvh = BVH(prims);
         };
-        bool intersect(const Ray& ray, Hit& res) const {
+        bool intersect(Ray& ray, Hit& res) const {
             return bvh.intersect(ray, res);
         };
         bool intersect_linear(const Ray& ray, Hit& res) const {

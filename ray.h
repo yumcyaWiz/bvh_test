@@ -6,6 +6,8 @@ class Ray {
         Vec3 direction;
         const float tmin = 0.0;
         const float tmax = 100000;
+        int hit_count = 0;
+        float factor = 1.0f;
 
         Ray(const Vec3& origin, const Vec3& direction) : origin(origin), direction(direction) {};
 
