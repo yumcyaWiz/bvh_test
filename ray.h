@@ -5,7 +5,7 @@ class Ray {
         Vec3 origin;
         Vec3 direction;
         float tmin = 0.01f;
-        float tmax = 10000.0f;
+        float tmax = 100000.0f;
         int hit_count = 0;
         float factor = 1.0f;
 

@@ -27,8 +27,7 @@ class Render {
             Hit res;
             if(prims->intersect(ray, res)) {
                 Ray nextRay(res.hitPos, normalize((res.hitNormal + randomInUnitSphere())));
-                float k = std::max(dot(res.hitNormal, nextRay.direction), 0.0f);
-                return k * Li(nextRay, depth + 1);
+                return 0.7f * Li(nextRay, depth + 1);
             }
             else {
                 return RGB(1.0f);
@@ -36,9 +35,9 @@ class Render {
         };
 
         void render() {
-            #pragma omp parallel for schedule(dynamic, 1)
             for(int k = 0; k < samples; k++) {
                 for(int i = 0; i < img->width; i++) {
+                    #pragma omp parallel for schedule(dynamic, 1)
                     for(int j = 0; j < img->height; j++) {
                         float u = (2.0f*i - img->width + rnd())/img->width;
                         float v = (2.0f*j - img->height + rnd())/img->height;

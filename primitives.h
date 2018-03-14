@@ -104,7 +104,7 @@ class BVH {
                         return;
                     }
 
-                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE || prims.size() <= 4) {
+                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE || prims.size() <= 2) {
                         std::size_t half_size = prims.size()/2;
                         std::nth_element(prims.begin(), prims.begin() + half_size, prims.end(), [axis](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
                                 return x->aabb().center[axis] < y->aabb().center[axis];
@@ -253,7 +253,7 @@ class BVH {
 
         BVH() {};
         BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
-            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::CENTER));
+            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::SAH));
             std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "BVH nodes:" << node_count << std::endl;
             std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
