@@ -20,7 +20,7 @@
 
 int main() {
     Image* img = new Image(512, 512);
-    Camera* cam = new Camera(Vec3(0, 5, 5), Vec3(0, 0, -1), 1.0);
+    Camera* cam = new Camera(Vec3(0, 100, 0), Vec3(1, 0, 0), 1.0);
 
     Primitives* prims = new Primitives();
     
@@ -30,7 +30,7 @@ int main() {
     }
     */
     
-    prims->loadObj(Vec3(0, 0, 0), "buddha.obj");
+    prims->loadObj(Vec3(0, 0, 0), 1.0f, "sponza_simple.obj");
     //prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
     //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     Timer timer;
@@ -38,10 +38,10 @@ int main() {
     prims->constructBVH();
     timer.stop();
 
-    int samples = 1;
+    int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render_normal();
+    render.render();
     timer.stop();
     std::cout << "Average BVH node Intersection Count:" << (float)bvh_intersection_count/(img->width*img->height*samples) << std::endl;
     std::cout << "Average Primitive Intersection Count:" << (float)primitive_intersecion_count/(img->width*img->height*samples) << std::endl;
