@@ -43,6 +43,28 @@ class AABB {
             }
             return true;
         };
+        bool intersect2(const Vec3& origin, const Vec3& invdir) const {
+            float t_min = std::numeric_limits<float>::lowest();
+            float t_max = std::numeric_limits<float>::max();
+            for(int i = 0; i < 3; i++) {
+                float t1 = (pMin[i] - origin[i])*invdir[i];
+                float t2 = (pMax[i] - origin[i])*invdir[i];
+                float t_near = std::min(t1, t2);
+                float t_far = std::max(t1, t2);
+                t_max = std::min(t_max, t_far);
+                t_min = std::max(t_min, t_near);
+                if(t_min > t_max) return false;
+            }
+            return true;
+        }
+
+        Vec3 offset(const Vec3& p) const {
+            Vec3 o = p - pMin;
+            o.x /= (pMax.x - pMin.x);
+            o.y /= (pMax.y - pMin.y);
+            o.z /= (pMax.z - pMin.z);
+            return o;
+        };
 };
 
 

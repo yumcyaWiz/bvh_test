@@ -83,7 +83,7 @@ class BVH {
                     //compute primitive centroid bounds
                     AABB centroidBounds;
                     for(auto itr = prims.begin(); itr != prims.end(); itr++) {
-                        centroidBounds = mergeAABB(centroidBounds, (*itr)->aabb().center);
+                        centroidBounds = mergeAABB(centroidBounds, (*itr)->center);
                     }
                     
                     //choose maximum extent axis
@@ -105,7 +105,7 @@ class BVH {
                         return;
                     }
 
-                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE) {
+                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE || prims.size() <= 4) {
                         std::size_t half_size = prims.size()/2;
                         std::nth_element(prims.begin(), prims.begin() + half_size, prims.end(), [axis](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
                                 return x->aabb().center[axis] < y->aabb().center[axis];
@@ -138,10 +138,76 @@ class BVH {
                         bbox = mergeAABB(bbox_left, bbox_right);
                     }
                     else {
+                        constexpr int nBuckets = 12;
+                        struct BucketInfo {
+                            int count = 0;
+                            AABB bounds;
+                        };
+                        BucketInfo buckets[nBuckets];
+
+                        AABB bounds;
+                        for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                            AABB prim_aabb = (*itr)->aabb();
+                            bounds = mergeAABB(bounds, prim_aabb);
+                            int b = nBuckets * centroidBounds.offset((*itr)->center)[axis];
+                            if(b == nBuckets) b = nBuckets - 1;
+                            buckets[b].count++;
+                            buckets[b].bounds = mergeAABB(buckets[b].bounds, prim_aabb);
+                        }
+
+                        float cost[nBuckets - 1];
+                        for(int i = 0; i < nBuckets - 1; i++) {
+                            AABB b0, b1;
+                            int count0 = 0, count1 = 0;
+                            for(int j = 0; j <= i; j++) {
+                                b0 = mergeAABB(b0, buckets[j].bounds);
+                                count0 += buckets[j].count;
+                            }
+                            for(int j = i+1; j < nBuckets; j++) {
+                                b1 = mergeAABB(b1, buckets[j].bounds);
+                                count1 += buckets[j].count;
+                            }
+                            cost[i] = 0.125f + (count0 * b0.surfaceArea() + count1 * b1.surfaceArea()) / bounds.surfaceArea();
+                        }
+
+                        float minCost = cost[0];
+                        int minCostSplitBucket = 0;
+                        for(int i = 1; i < nBuckets - 1; i++) {
+                            if(cost[i] < minCost) {
+                                minCost = cost[i];
+                                minCostSplitBucket = i;
+                            }
+                        }
+
+                        float leafCost = prims.size();
+                        if(minCost < leafCost) {
+                            auto midPtr = std::partition(prims.begin(), prims.end(), [=](std::shared_ptr<Primitive> x) {
+                                    int b = nBuckets * centroidBounds.offset(x->center)[axis];
+                                    if(b == nBuckets) b = nBuckets - 1;
+                                    return b <= minCostSplitBucket;
+                                    });
+
+                            std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), midPtr);
+                            std::vector<std::shared_ptr<Primitive>> right_prims(midPtr, prims.end());
+
+                            left = std::shared_ptr<BVH_node>(new BVH_node(left_prims, partition_type));
+                            right = std::shared_ptr<BVH_node>(new BVH_node(right_prims, partition_type));
+                            AABB bbox_left = left->bbox;
+                            AABB bbox_right = right->bbox;
+                            bbox = mergeAABB(bbox_left, bbox_right);
+                        }
+                        else {
+                            leaf_count++;
+                            left = right = nullptr;
+                            for(auto itr = prims.begin(); itr != prims.end(); itr++)
+                                prim.push_back((*itr));
+                            bbox = computeBounds(prim); 
+                            return;
+                        }
                     }
                 };
 
-                bool intersect(Ray& ray, Hit& res) const {
+                bool intersect(Ray& ray, Hit& res, const Vec3& invdir) const {
                     bvh_intersection_count++;
 
                     //if this node is leaf
@@ -157,7 +223,7 @@ class BVH {
                     };
 
                     //ray hits node's bounding box?
-                    if(!bbox.intersect(ray))
+                    if(!bbox.intersect2(ray.origin, invdir))
                         return false;
 
                     ray.hit_count++;
@@ -165,8 +231,8 @@ class BVH {
 
                     Hit res_left;
                     Hit res_right;
-                    bool hit_left = left->intersect(ray, res_left);
-                    bool hit_right = right->intersect(ray, res_right);
+                    bool hit_left = left->intersect(ray, res_left, invdir);
+                    bool hit_right = right->intersect(ray, res_right, invdir);
 
                     if(hit_left && hit_right) {
                         if(res_left.t < res_right.t)
@@ -194,7 +260,7 @@ class BVH {
 
         BVH() {};
         BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
-            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::CENTER));
+            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::SAH));
             std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "BVH nodes:" << node_count << std::endl;
             std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
@@ -205,7 +271,8 @@ class BVH {
         };
 
         bool intersect(Ray& ray, Hit& res) const {
-            return bvh_root->intersect(ray, res);
+            Vec3 invdir = 1.0f/ray.direction;
+            return bvh_root->intersect(ray, res, invdir);
         };
 };
 

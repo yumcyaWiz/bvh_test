@@ -12,6 +12,11 @@
 #include "aabb.h"
 class Primitive {
     public:
+        Vec3 center;
+
+        Primitive() {};
+        Primitive(const Vec3& center) : center(center) {};
+
         virtual bool intersect(const Ray& ray, Hit& hit) const = 0;
         virtual AABB aabb() const = 0;
 };
@@ -19,10 +24,9 @@ class Primitive {
 
 class Sphere : public Primitive {
     public:
-        Vec3 center;
         float radius;
 
-        Sphere(const Vec3& center, float radius) : center(center), radius(radius) {};
+        Sphere(const Vec3& center, float radius) : Primitive(center), radius(radius) {};
 
         bool intersect(const Ray& ray, Hit& hit) const {
             float b = dot(ray.direction, ray.origin - center);
@@ -60,7 +64,7 @@ class Triangle : public Primitive {
         Vec3 normal;
 
         Triangle() {};
-        Triangle(const Vec3& p1, const Vec3& p2, const Vec3& p3) : p1(p1), p2(p2), p3(p3) {
+        Triangle(const Vec3& p1, const Vec3& p2, const Vec3& p3) : Primitive((p1 + p2 + p3)/3), p1(p1), p2(p2), p3(p3) {
             normal = normalize(cross(p2 - p1, p3 - p1));
         };
 
