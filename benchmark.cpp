@@ -20,7 +20,7 @@
 
 int main() {
     Primitives prims;
-    prims.loadObj(Vec3(0), "buddha.obj");
+    prims.loadObj(Vec3(0), 100.0f, "buddha.obj");
 
     Timer timer;
     timer.start();
@@ -43,6 +43,23 @@ int main() {
         }
     }
 
+    //pretest
+    Ray pretest_ray(ss[76][48], ds[76][48]);
+    Hit pretest_res;
+    bool pretest_hit = prims.intersect(pretest_ray, pretest_res);
+    if(!pretest_hit) {
+        std::cerr << "Pretest failed" << std::endl;
+        std::exit(1);
+    }
+    else {
+        std::cout << "Pretest success!" << std::endl;
+        std::cout << "AABB center:" << c << std::endl;
+        std::cout << "ray origin:" << pretest_ray.origin << std::endl;
+        std::cout << "ray direction:" << pretest_ray.direction << std::endl;
+        std::cout << "Pretest hitPos:" << pretest_res.hitPos << std::endl;
+        std::cout << "Pretest hitNormal:" << pretest_res.hitNormal << std::endl;
+    }
+
     int nTest = 100;
     double t = 0;
     for(int ccc = 0; ccc < nTest; ccc++) {
@@ -52,7 +69,7 @@ int main() {
             for(int j = 0; j < 100; j++) {
                 Ray ray(ss[i][j], ds[i][j]);
                 Hit res;
-                prims.intersect(ray, res);
+                bool hit = prims.intersect(ray, res);
             }
         }
         auto end = std::chrono::system_clock::now();

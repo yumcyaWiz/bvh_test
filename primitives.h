@@ -423,7 +423,7 @@ class Primitives {
         void add(Primitive* prim) {
             prims.push_back(std::shared_ptr<Primitive>(prim));
         };
-        void loadObj(const Vec3& center, const std::string& filename) {
+        void loadObj(const Vec3& center, float scale, const std::string& filename) {
             tinyobj::attrib_t attrib;
             std::vector<tinyobj::shape_t> shapes;
             std::vector<tinyobj::material_t> materials;
@@ -447,7 +447,7 @@ class Primitives {
                         tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
                         tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
                         tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
-                        vertex.push_back(Vec3((float)vx, (float)vy, (float)vz));
+                        vertex.push_back(scale*Vec3((float)vx, (float)vy, (float)vz));
                         vertex_count++;
                     }
                     index_offset += fv;
