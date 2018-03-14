@@ -17,8 +17,8 @@ class BVH {
     private:
         struct BVH_node {
             public:
-                BVH_node* left; //left child pointer
-                BVH_node* right; //right child pointer
+                std::shared_ptr<BVH_node> left; //left child pointer
+                std::shared_ptr<BVH_node> right; //right child pointer
                 AABB bbox; //node bounding box
                 std::shared_ptr<Primitive> prim; //node primitive(leaf node only)
 
@@ -33,7 +33,7 @@ class BVH {
                         std::cerr << "prims is empty" << std::endl;
                         std::exit(1);
                     }
-                    if(prims.size() == 1) {
+                    else if(prims.size() == 1) {
                         leaf_count++;
                         left = right = nullptr;
                         prim = prims[0];
@@ -62,17 +62,19 @@ class BVH {
                     std::size_t const half_size = prims.size()/2;
                     std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
                     std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
-                    left = new BVH_node(left_prims);
-                    right = new BVH_node(right_prims);
+                    left = std::shared_ptr<BVH_node>(new BVH_node(left_prims));
+                    right = std::shared_ptr<BVH_node>(new BVH_node(right_prims));
                     AABB bbox_left = left->bbox;
                     AABB bbox_right = right->bbox;
                     bbox = mergeAABB(bbox_left, bbox_right);
                 };
 
                 bool intersect(Ray& ray, Hit& res) const {
+                    //if this node is leaf
                     if(left == nullptr && right == nullptr)
                         return prim->intersect(ray, res);
 
+                    //ray hits node's bounding box?
                     if(!bbox.intersect(ray))
                         return false;
 
@@ -106,11 +108,11 @@ class BVH {
 
 
     public:
-        BVH_node* bvh_root;
+        std::shared_ptr<BVH_node> bvh_root;
 
         BVH() {};
         BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
-            bvh_root = new BVH_node(prims);
+            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims));
             std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "BVH nodes:" << node_count << std::endl;
             std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
