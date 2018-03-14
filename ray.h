@@ -4,8 +4,8 @@ class Ray {
     public:
         Vec3 origin;
         Vec3 direction;
-        const float tmin = 0.0;
-        const float tmax = 100000;
+        float tmin = 0.001f;
+        float tmax = 10000.0f;
         int hit_count = 0;
         float factor = 1.0f;
 

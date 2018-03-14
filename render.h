@@ -26,7 +26,7 @@ class Render {
 
             Hit res;
             if(prims->intersect(ray, res)) {
-                Ray nextRay(res.hitPos + 0.001*res.hitNormal, randomInUnitSphere());
+                Ray nextRay(res.hitPos, randomInUnitSphere());
                 float k = std::max(dot(res.hitNormal, nextRay.direction), 0.0f);
                 return k * Li(nextRay, depth + 1);
             }

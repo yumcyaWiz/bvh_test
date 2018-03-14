@@ -71,8 +71,13 @@ class BVH {
 
                 bool intersect(Ray& ray, Hit& res) const {
                     //if this node is leaf
-                    if(left == nullptr && right == nullptr)
-                        return prim->intersect(ray, res);
+                    if(left == nullptr && right == nullptr) {
+                        bool hit = prim->intersect(ray, res);
+                        //limit ray.tmax
+                        if(hit)
+                            ray.tmax = res.t;
+                        return hit;
+                    };
 
                     //ray hits node's bounding box?
                     if(!bbox.intersect(ray))
