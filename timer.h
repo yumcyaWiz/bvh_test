@@ -2,6 +2,7 @@
 #define TIMER_H
 #include <chrono>
 #include <iostream>
+#include <string>
 
 
 class Timer {
@@ -14,11 +15,11 @@ class Timer {
         void start() {
             tstart = std::chrono::system_clock::now();
         }
-        void stop() {
+        void stop(const std::string& message = "") {
             tend = std::chrono::system_clock::now();
             auto dur = tend - tstart;
             auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-            std::cout << msec << "ms" << std::endl;
+            std::cout << message << msec << "ms" << std::endl;
         };
 };
 #endif

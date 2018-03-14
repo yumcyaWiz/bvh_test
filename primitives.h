@@ -74,9 +74,8 @@ class BVH {
                     else if(prims.size() == 1) {
                         leaf_count++;
                         left = right = nullptr;
-                        for(auto itr = prims.begin(); itr != prims.end(); itr++)
-                            prim.push_back((*itr));
-                        bbox = computeBounds(prim); 
+                        prim.push_back(prims[0]);
+                        bbox = prims[0]->aabb();
                         return;
                     }
 
@@ -116,9 +115,7 @@ class BVH {
 
                         left = std::shared_ptr<BVH_node>(new BVH_node(left_prims, partition_type));
                         right = std::shared_ptr<BVH_node>(new BVH_node(right_prims, partition_type));
-                        AABB bbox_left = left->bbox;
-                        AABB bbox_right = right->bbox;
-                        bbox = mergeAABB(bbox_left, bbox_right);
+                        bbox = mergeAABB(left->bbox, right->bbox);
                     }
                     else if(partition_type == BVH_PARTITION_TYPE::CENTER) {
                         //compute mid point
@@ -133,9 +130,7 @@ class BVH {
 
                         left = std::shared_ptr<BVH_node>(new BVH_node(left_prims, partition_type));
                         right = std::shared_ptr<BVH_node>(new BVH_node(right_prims, partition_type));
-                        AABB bbox_left = left->bbox;
-                        AABB bbox_right = right->bbox;
-                        bbox = mergeAABB(bbox_left, bbox_right);
+                        bbox = mergeAABB(left->bbox, right->bbox);
                     }
                     else {
                         constexpr int nBuckets = 12;
@@ -192,9 +187,7 @@ class BVH {
 
                             left = std::shared_ptr<BVH_node>(new BVH_node(left_prims, partition_type));
                             right = std::shared_ptr<BVH_node>(new BVH_node(right_prims, partition_type));
-                            AABB bbox_left = left->bbox;
-                            AABB bbox_right = right->bbox;
-                            bbox = mergeAABB(bbox_left, bbox_right);
+                            bbox = mergeAABB(left->bbox, right->bbox);
                         }
                         else {
                             leaf_count++;

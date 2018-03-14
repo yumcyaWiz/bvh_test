@@ -20,7 +20,44 @@
 
 int main() {
     Primitives prims;
-    prims.loadObj("buddha.obj");
+    prims.loadObj(Vec3(0), "buddha.obj");
+
+    Timer timer;
+    timer.start();
+    prims.constructBVH();
+    timer.stop("BVH Construction:");
 
     AABB objAABB = prims.aabb();
+
+    Vec3 max = objAABB.pMax;
+    Vec3 min = objAABB.pMin;
+    Vec3 c = (max + min)/2.0f;
+
+    Vec3 ss[101][101];
+    Vec3 ds[101][101];
+    for(int i = 0; i < 101; i++) {
+        for(int j = 0; j < 101; j++) {
+            Vec3 s = min + Vec3((max.x - min.x)*(i/100.0f), (max.y - min.y)*(j/100.0f), 0.0f);
+            ss[i][j] = s;
+            ds[i][j] = normalize(c - s);
+        }
+    }
+
+    int nTest = 100;
+    double t = 0;
+    for(int ccc = 0; ccc < nTest; ccc++) {
+        auto start = std::chrono::system_clock::now();
+        #pragma omp parallel for schedule(dynamic, 1)
+        for(int i = 0; i < 100; i++) {
+            for(int j = 0; j < 100; j++) {
+                Ray ray(ss[i][j], ds[i][j]);
+                Hit res;
+                prims.intersect(ray, res);
+            }
+        }
+        auto end = std::chrono::system_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        t += elapsed;
+    }
+    std::cout << "Benchmark:" << t/nTest << "ms" << std::endl;
 }
