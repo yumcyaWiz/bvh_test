@@ -11,6 +11,8 @@
 
 static int node_count = 0;
 static int leaf_count = 0;
+static int bvh_intersection_count = 0;
+static int primitive_intersecion_count = 0;
 
 
 class BVH {
@@ -70,12 +72,18 @@ class BVH {
                 };
 
                 bool intersect(Ray& ray, Hit& res) const {
+                    bvh_intersection_count++;
+
                     //if this node is leaf
                     if(left == nullptr && right == nullptr) {
+                        primitive_intersecion_count++;
                         bool hit = prim->intersect(ray, res);
                         //limit ray.tmax
-                        if(hit)
-                            ray.tmax = res.t;
+                        if(hit) { 
+                            if(res.t < ray.tmax) {
+                                ray.tmax = res.t;
+                            }
+                        }
                         return hit;
                     };
 

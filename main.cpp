@@ -20,7 +20,7 @@
 
 int main() {
     Image* img = new Image(512, 512);
-    Camera* cam = new Camera(Vec3(0, 5, 10), Vec3(0, 0, -1), 1.0);
+    Camera* cam = new Camera(Vec3(0, 5, 5), Vec3(0, 0, -1), 1.0);
 
     Primitives* prims = new Primitives();
     
@@ -38,10 +38,13 @@ int main() {
     prims->constructBVH();
     timer.stop();
 
-    Render render(img, cam, prims, 50);
+    int samples = 1;
+    Render render(img, cam, prims, samples);
     timer.start();
-    render.render();
+    render.render_normal();
     timer.stop();
+    std::cout << "Average BVH node Intersection Count:" << (float)bvh_intersection_count/(img->width*img->height*samples) << std::endl;
+    std::cout << "Average Primitive Intersection Count:" << (float)primitive_intersecion_count/(img->width*img->height*samples) << std::endl;
 
     render.output();
 }
