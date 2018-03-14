@@ -38,13 +38,14 @@ int main() {
     prims->constructBVH();
     timer.stop();
 
-    int samples = 100;
+    int samples = 10;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render();
+    render.render_bvh();
     timer.stop();
-    std::cout << "Average BVH node Intersection Count:" << (float)bvh_intersection_count/(img->width*img->height*samples) << std::endl;
-    std::cout << "Average Primitive Intersection Count:" << (float)primitive_intersecion_count/(img->width*img->height*samples) << std::endl;
+    std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;
+    std::cout << "Primitive Intersection Count:" << (float)primitive_intersection_count << std::endl;
+    std::cout << "node/primitive intersection:" << (float)primitive_intersection_count/bvh_intersection_count*100 << "%" << std::endl;
 
     render.output();
 }

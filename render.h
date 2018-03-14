@@ -72,6 +72,27 @@ class Render {
                     std::cout << progressbar(i, img->width) << " " << percentage(i, img->width) << "\r" << std::flush;
             }
         };
+        void render_bvh() {
+            #pragma omp parallel for schedule(dynamic, 1)
+            for(int i = 0; i < img->width; i++) {
+                for(int j = 0; j < img->height; j++) {
+                    float u = (2.0f*i - img->width)/img->width;
+                    float v = (2.0f*j - img->height)/img->height;
+                    Ray ray = cam->getRay(u, v);
+                    Hit res;
+                    RGB col;
+                    if(prims->intersect(ray, res)) {
+                        col = jetcolormap(ray.hit_count/200.f);
+                    }
+                    else {
+                        col = RGB(0.0f);
+                    }
+                    img->setPixel(i, j, col);
+                }
+                if(omp_get_thread_num() == 0)
+                    std::cout << progressbar(i, img->width) << " " << percentage(i, img->width) << "\r" << std::flush;
+            }
+        }
 
         void output() const {
             img->gamma_correction();

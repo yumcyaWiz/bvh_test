@@ -22,6 +22,13 @@ class AABB {
             center = (pMin + pMax)/2;
         };
 
+        Vec3 operator[](int i) const {
+            if(i == 0)
+                return pMin;
+            else
+                return pMax;
+        };
+
         float surfaceArea() const {
             float dx = pMax.x - pMin.x;
             float dy = pMax.y - pMin.y;
@@ -30,32 +37,40 @@ class AABB {
         };
 
         bool intersect(const Ray& ray) const {
-            float t_min = std::numeric_limits<float>::lowest();
-            float t_max = std::numeric_limits<float>::max();
+            float t0 = ray.tmin;
+            float t1 = ray.tmax;
             for(int i = 0; i < 3; i++) {
-                float t1 = (pMin[i] - ray.origin[i])/ray.direction[i];
-                float t2 = (pMax[i] - ray.origin[i])/ray.direction[i];
-                float t_near = std::min(t1, t2);
-                float t_far = std::max(t1, t2);
-                t_max = std::min(t_max, t_far);
-                t_min = std::max(t_min, t_near);
-                if(t_min > t_max) return false;
+                float tNear = (pMin[i] - ray.origin[i])/ray.direction[i];
+                float tFar = (pMax[i] - ray.origin[i])/ray.direction[i];
+                
+                if(tNear > tFar) std::swap(tNear, tFar);
+
+                t0 = tNear > t0 ? tNear : t0;
+                t1 = tFar < t1 ? tFar : t1;
+                if(t0 > t1) return false;
             }
             return true;
         };
-        bool intersect2(const Vec3& origin, const Vec3& invdir) const {
-            float t_min = std::numeric_limits<float>::lowest();
-            float t_max = std::numeric_limits<float>::max();
-            for(int i = 0; i < 3; i++) {
-                float t1 = (pMin[i] - origin[i])*invdir[i];
-                float t2 = (pMax[i] - origin[i])*invdir[i];
-                float t_near = std::min(t1, t2);
-                float t_far = std::max(t1, t2);
-                t_max = std::min(t_max, t_far);
-                t_min = std::max(t_min, t_near);
-                if(t_min > t_max) return false;
-            }
-            return true;
+        bool intersect2(const Ray& ray, const Vec3& invdir, const int dirIsNeg[3]) const {
+            const AABB& bounds = *this;
+
+            float tMin = (bounds[dirIsNeg[0]].x - ray.origin.x) * invdir.x;
+            float tMax = (bounds[1 - dirIsNeg[0]].x - ray.origin.x) * invdir.x;
+            float tyMin = (bounds[dirIsNeg[1]].y - ray.origin.y) * invdir.y;
+            float tyMax = (bounds[1 - dirIsNeg[1]].y - ray.origin.y) * invdir.y;
+            if(tMin > tyMax || tyMin > tMax)
+                return false;
+            if(tyMin > tMin) tMin = tyMin;
+            if(tyMax < tMax) tMax = tyMax;
+
+            float tzMin = (bounds[dirIsNeg[2]].z - ray.origin.z) * invdir.z;
+            float tzMax = (bounds[1 - dirIsNeg[2]].z - ray.origin.z) * invdir.z;
+            if(tMin > tzMax || tzMin > tMax)
+                return false;
+            if(tzMin > tMin) tMin = tzMin;
+            if(tzMax < tMax) tMax = tzMax;
+
+            return (tMin < ray.tmax) && (tMax > ray.tmin);
         }
 
         Vec3 offset(const Vec3& p) const {

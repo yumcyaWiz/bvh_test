@@ -17,7 +17,7 @@ static int ysplit_count = 0;
 static int zsplit_count = 0;
 
 static int bvh_intersection_count = 0;
-static int primitive_intersecion_count = 0;
+static int primitive_intersection_count = 0;
 
 
 
@@ -122,7 +122,7 @@ class BVH {
                         float pmid = 0.5f*centroidBounds.pMin[axis] + 0.5f*centroidBounds.pMax[axis];
                         //partition primitives by mid point
                         auto midPtr = std::partition(prims.begin(), prims.end(), [axis, pmid](std::shared_ptr<Primitive> x) {
-                                return x->aabb().center[axis] < pmid;
+                                return x->center[axis] < pmid;
                                 });
 
                         std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), midPtr);
@@ -200,12 +200,12 @@ class BVH {
                     }
                 };
 
-                bool intersect(Ray& ray, Hit& res, const Vec3& invdir) const {
+                bool intersect(Ray& ray, Hit& res, const Vec3& invdir, const int dirIsNeg[3]) const {
                     bvh_intersection_count++;
 
                     //if this node is leaf
                     if(left == nullptr && right == nullptr) {
-                        primitive_intersecion_count++;
+                        primitive_intersection_count++;
                         bool hit = prim_intersect(prim, ray, res);
                         if(hit) {
                             if(res.t < ray.tmax) {
@@ -216,7 +216,7 @@ class BVH {
                     };
 
                     //ray hits node's bounding box?
-                    if(!bbox.intersect2(ray.origin, invdir))
+                    if(!bbox.intersect2(ray, invdir, dirIsNeg))
                         return false;
 
                     ray.hit_count++;
@@ -224,8 +224,8 @@ class BVH {
 
                     Hit res_left;
                     Hit res_right;
-                    bool hit_left = left->intersect(ray, res_left, invdir);
-                    bool hit_right = right->intersect(ray, res_right, invdir);
+                    bool hit_left = left->intersect(ray, res_left, invdir, dirIsNeg);
+                    bool hit_right = right->intersect(ray, res_right, invdir, dirIsNeg);
 
                     if(hit_left && hit_right) {
                         if(res_left.t < res_right.t)
@@ -253,7 +253,7 @@ class BVH {
 
         BVH() {};
         BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
-            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::SAH));
+            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::CENTER));
             std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "BVH nodes:" << node_count << std::endl;
             std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
@@ -264,12 +264,17 @@ class BVH {
         };
 
         bool intersect(Ray& ray, Hit& res) const {
-            Vec3 invdir = 1.0f/ray.direction;
-            return bvh_root->intersect(ray, res, invdir);
+            const Vec3 invdir = 1.0f/ray.direction;
+            int dirIsNeg[3];
+            dirIsNeg[0] = ray.direction.x < 0 ? 1 : 0;
+            dirIsNeg[1] = ray.direction.y < 0 ? 1 : 0;
+            dirIsNeg[2] = ray.direction.z < 0 ? 1 : 0;
+            return bvh_root->intersect(ray, res, invdir, dirIsNeg);
         };
 };
 
 
+/*
 class BVH_array {
     private:
         struct BVH_array_node {
@@ -411,6 +416,7 @@ class BVH_array {
             }
         };
 };
+*/
 
 
 class Primitives {
