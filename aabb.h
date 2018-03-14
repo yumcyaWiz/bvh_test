@@ -55,6 +55,29 @@ inline AABB mergeAABB(const AABB& b1, const AABB& b2) {
     float maxZ = std::max(b1.pMax.z, b2.pMax.z);
     return AABB(Vec3(minX, minY, minZ), Vec3(maxX, maxY, maxZ));
 }
+inline AABB mergeAABB(const AABB& b1, const Vec3& p) {
+    float minX = std::min(b1.pMin.x, p.x);
+    float minY = std::min(b1.pMin.y, p.y);
+    float minZ = std::min(b1.pMin.z, p.z);
+    float maxX = std::max(b1.pMax.x, p.x);
+    float maxY = std::max(b1.pMax.y, p.y);
+    float maxZ = std::max(b1.pMax.z, p.z);
+    return AABB(Vec3(minX, minY, minZ), Vec3(maxX, maxY, maxZ));
+}
+
+
+inline int maximumExtent(const AABB& b) {
+    float dx = b.pMax.x - b.pMin.x;
+    float dy = b.pMax.y - b.pMin.y;
+    float dz = b.pMax.z - b.pMin.z;
+    float max = std::max(dx, std::max(dy, dz));
+    if(max == dx)
+        return 0;
+    else if(max == dy)
+        return 1;
+    else
+        return 2;
+}
 
 
 inline std::ostream& operator<<(std::ostream& stream, const AABB& aabb) {

@@ -11,8 +11,21 @@
 
 static int node_count = 0;
 static int leaf_count = 0;
+
+static int xsplit_count = 0;
+static int ysplit_count = 0;
+static int zsplit_count = 0;
+
 static int bvh_intersection_count = 0;
 static int primitive_intersecion_count = 0;
+
+
+
+enum class BVH_PARTITION_TYPE {
+    EQSIZE,
+    CENTER,
+    SAH
+};
 
 
 class BVH {
@@ -28,7 +41,7 @@ class BVH {
                     left = right = nullptr;
                     prim = _prim;
                 };
-                BVH_node(std::vector<std::shared_ptr<Primitive>>& prims) {
+                BVH_node(std::vector<std::shared_ptr<Primitive>>& prims, BVH_PARTITION_TYPE partition_type) {
                     node_count++;
 
                     if(prims.size() == 0) {
@@ -42,33 +55,66 @@ class BVH {
                         bbox = prim->aabb();
                         return;
                     }
+
+                    //compute primitive centroid bounds
+                    AABB centroidBounds;
+                    for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                        centroidBounds = mergeAABB(centroidBounds, (*itr)->aabb().center);
+                    }
                     
-                    //randomly choose splitting axis
-                    int axis = (int)(3*rnd());
-                    if(axis == 0) {
-                        std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                                return x->aabb().center.x < y->aabb().center.x;
-                                });
-                    }
-                    else if(axis == 1) {
-                        std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                                return x->aabb().center.y < y->aabb().center.y;
-                                });
-                    }
-                    else if(axis == 2) {
-                        std::sort(prims.begin(), prims.end(), [](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
-                                return x->aabb().center.z < y->aabb().center.z;
-                                });
+                    //choose maximum extent axis
+                    int axis = maximumExtent(centroidBounds);
+                    if(axis == 0)
+                        xsplit_count++;
+                    else if(axis == 1)
+                        ysplit_count++;
+                    else
+                        zsplit_count++;
+
+                    //if centroidBounds are degenerate make leaf
+                    if(centroidBounds.pMin[axis] == centroidBounds.pMax[axis]) {
+                        leaf_count++;
+                        left = right = nullptr;
+                        prim = prims[0];
+                        bbox = prim->aabb();
+                        return;
                     }
 
-                    std::size_t const half_size = prims.size()/2;
-                    std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
-                    std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
-                    left = std::shared_ptr<BVH_node>(new BVH_node(left_prims));
-                    right = std::shared_ptr<BVH_node>(new BVH_node(right_prims));
-                    AABB bbox_left = left->bbox;
-                    AABB bbox_right = right->bbox;
-                    bbox = mergeAABB(bbox_left, bbox_right);
+
+                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE) {
+                        std::size_t half_size = prims.size()/2;
+                        std::nth_element(prims.begin(), prims.begin() + half_size, prims.end(), [axis](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
+                                return x->aabb().center[axis] < y->aabb().center[axis];
+                                });
+
+                        std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), prims.begin() + half_size);
+                        std::vector<std::shared_ptr<Primitive>> right_prims(prims.begin() + half_size, prims.end());
+
+                        left = std::shared_ptr<BVH_node>(new BVH_node(left_prims, partition_type));
+                        right = std::shared_ptr<BVH_node>(new BVH_node(right_prims, partition_type));
+                        AABB bbox_left = left->bbox;
+                        AABB bbox_right = right->bbox;
+                        bbox = mergeAABB(bbox_left, bbox_right);
+                    }
+                    else if(partition_type == BVH_PARTITION_TYPE::CENTER) {
+                        //compute mid point
+                        float pmid = 0.5f*centroidBounds.pMin[axis] + 0.5f*centroidBounds.pMax[axis];
+                        //partition primitives by mid point
+                        auto midPtr = std::partition(prims.begin(), prims.end(), [axis, pmid](std::shared_ptr<Primitive> x) {
+                                return x->aabb().center[axis] < pmid;
+                                });
+
+                        std::vector<std::shared_ptr<Primitive>> left_prims(prims.begin(), midPtr);
+                        std::vector<std::shared_ptr<Primitive>> right_prims(midPtr, prims.end());
+
+                        left = std::shared_ptr<BVH_node>(new BVH_node(left_prims, partition_type));
+                        right = std::shared_ptr<BVH_node>(new BVH_node(right_prims, partition_type));
+                        AABB bbox_left = left->bbox;
+                        AABB bbox_right = right->bbox;
+                        bbox = mergeAABB(bbox_left, bbox_right);
+                    }
+                    else {
+                    }
                 };
 
                 bool intersect(Ray& ray, Hit& res) const {
@@ -125,11 +171,14 @@ class BVH {
 
         BVH() {};
         BVH(std::vector<std::shared_ptr<Primitive>>& prims) {
-            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims));
+            bvh_root = std::shared_ptr<BVH_node>(new BVH_node(prims, BVH_PARTITION_TYPE::CENTER));
             std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "BVH nodes:" << node_count << std::endl;
             std::cout << "BVH leaf nodes:" << leaf_count << std::endl;
             std::cout << "BVH leaf/node:" << (float)leaf_count/node_count * 100 << "%" << std::endl;
+            std::cout << "X Split Count:" << xsplit_count << std::endl;
+            std::cout << "Y Split Count:" << ysplit_count << std::endl;
+            std::cout << "Z Split Count:" << zsplit_count << std::endl;
         };
 
         bool intersect(Ray& ray, Hit& res) const {
