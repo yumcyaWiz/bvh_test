@@ -35,11 +35,34 @@ class BVH {
                 std::shared_ptr<BVH_node> left; //left child pointer
                 std::shared_ptr<BVH_node> right; //right child pointer
                 AABB bbox; //node bounding box
-                std::shared_ptr<Primitive> prim; //node primitive(leaf node only)
+                std::vector<std::shared_ptr<Primitive>> prim; //node primitives(leaf node only)
+
+                AABB computeBounds(const std::vector<std::shared_ptr<Primitive>>& prims) const {
+                    AABB ret;
+                    for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                        ret = mergeAABB(ret, (*itr)->aabb());
+                    }
+                    return ret;
+                };
+                bool prim_intersect(const std::vector<std::shared_ptr<Primitive>>& prims, Ray& ray, Hit& res) const {
+                    bool hit = false;
+                    res.t = ray.tmax;
+                    Hit prim_res;
+                    for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                        bool prim_hit = (*itr)->intersect(ray, prim_res);
+                        if(prim_hit) {
+                            hit = true;
+                            if(prim_res.t < res.t) {
+                                res = prim_res;
+                            }
+                        }
+                    }
+                    return hit;
+                }
 
                 BVH_node(std::shared_ptr<Primitive> _prim) {
                     left = right = nullptr;
-                    prim = _prim;
+                    prim.push_back(_prim);
                 };
                 BVH_node(std::vector<std::shared_ptr<Primitive>>& prims, BVH_PARTITION_TYPE partition_type) {
                     node_count++;
@@ -51,8 +74,9 @@ class BVH {
                     else if(prims.size() == 1) {
                         leaf_count++;
                         left = right = nullptr;
-                        prim = prims[0];
-                        bbox = prim->aabb();
+                        for(auto itr = prims.begin(); itr != prims.end(); itr++)
+                            prim.push_back((*itr));
+                        bbox = computeBounds(prim); 
                         return;
                     }
 
@@ -71,15 +95,15 @@ class BVH {
                     else
                         zsplit_count++;
 
-                    //if centroidBounds are degenerate make leaf
+                    //if centroidBounds are degenerate make this node as leaf
                     if(centroidBounds.pMin[axis] == centroidBounds.pMax[axis]) {
                         leaf_count++;
                         left = right = nullptr;
-                        prim = prims[0];
-                        bbox = prim->aabb();
+                        for(auto itr = prims.begin(); itr != prims.end(); itr++)
+                            prim.push_back((*itr));
+                        bbox = computeBounds(prim);
                         return;
                     }
-
 
                     if(partition_type == BVH_PARTITION_TYPE::EQSIZE) {
                         std::size_t half_size = prims.size()/2;
@@ -123,9 +147,8 @@ class BVH {
                     //if this node is leaf
                     if(left == nullptr && right == nullptr) {
                         primitive_intersecion_count++;
-                        bool hit = prim->intersect(ray, res);
-                        //limit ray.tmax
-                        if(hit) { 
+                        bool hit = prim_intersect(prim, ray, res);
+                        if(hit) {
                             if(res.t < ray.tmax) {
                                 ray.tmax = res.t;
                             }
