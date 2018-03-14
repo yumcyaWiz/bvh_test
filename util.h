@@ -2,6 +2,7 @@
 #define UTIL_H
 #include <string>
 #include <cmath>
+#include "rgb.h"
 
 
 template<typename T>
@@ -12,6 +13,11 @@ T clamp(T x, T xmin, T xmax) {
         return xmax;
     else
         return x;
+}
+
+
+RGB pow(const RGB& col, float n) {
+    return RGB(std::pow(col.r, n), std::pow(col.g, n), std::pow(col.b, n));
 }
 
 

@@ -75,6 +75,7 @@ class BVH {
 
                     if(!bbox.intersect(ray))
                         return false;
+
                     ray.hit_count++;
                     ray.factor *= 0.99f;
 
@@ -268,7 +269,7 @@ class BVH_array {
 class Primitives {
     public:
         std::vector<std::shared_ptr<Primitive>> prims;
-        BVH bvh;
+        std::shared_ptr<BVH> bvh;
 
         Primitives() {};
 
@@ -312,10 +313,10 @@ class Primitives {
         };
 
         void constructBVH() {
-            bvh = BVH(prims);
+            bvh = std::shared_ptr<BVH>(new BVH(prims));
         };
         bool intersect(Ray& ray, Hit& res) const {
-            return bvh.intersect(ray, res);
+            return bvh->intersect(ray, res);
         };
         bool intersect_linear(const Ray& ray, Hit& res) const {
             bool hit = false;
