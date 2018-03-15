@@ -76,5 +76,6 @@ int main() {
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         t += elapsed;
     }
+    std::cout << "Total Ray Count:" << ray_count << std::endl;
     std::cout << "Benchmark:" << t/nTest << "ms" << std::endl;
 }

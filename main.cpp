@@ -38,7 +38,7 @@ int main() {
     prims->constructBVH();
     timer.stop();
 
-    int samples = 10;
+    int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
     render.render();
