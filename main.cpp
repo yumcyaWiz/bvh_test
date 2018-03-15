@@ -20,7 +20,7 @@
 
 int main() {
     Image* img = new Image(512, 512);
-    Camera* cam = new Camera(Vec3(-10, 1, 0), Vec3(1, 0, 0), 1.0);
+    Camera* cam = new Camera(Vec3(0, 1, -2), Vec3(0, 0, 1), 1.0);
 
     Primitives* prims = new Primitives();
     
@@ -30,8 +30,8 @@ int main() {
     }
     */
     
-    prims->loadObj(Vec3(0, 0, 0), 0.01f, "sponza_simple.obj");
-    prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
+    prims->loadObj(Vec3(0, 0, 0), 10.0f, "bunny.obj");
+    //prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
     //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     Timer timer;
     timer.start();
@@ -41,11 +41,13 @@ int main() {
     int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render();
+    render.render_bvh();
     timer.stop();
     std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;
     std::cout << "Primitive Intersection Count:" << (float)primitive_intersection_count << std::endl;
     std::cout << "node/primitive intersection:" << (float)primitive_intersection_count/bvh_intersection_count*100 << "%" << std::endl;
+
+    std::cout << "Max Intersection Count:" << max_intersection_count << std::endl;
 
     render.output();
 }

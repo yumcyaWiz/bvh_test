@@ -68,4 +68,9 @@ RGB jetcolormap(float x) {
     float b = clamp(jetcolormap_blue(x), 0.f, 1.f);
     return RGB(r, g, b);
 }
+
+
+RGB GRcolormap(float x) {
+    return x*RGB(1, 0, 0) + (1 - x)*RGB(0, 1, 0);
+}
 #endif

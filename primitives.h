@@ -19,6 +19,9 @@ static int zsplit_count = 0;
 static int bvh_intersection_count = 0;
 static int primitive_intersection_count = 0;
 
+static int max_intersection_count = 0;
+static int intersection_count = 0;
+
 
 
 enum class BVH_PARTITION_TYPE {
@@ -206,6 +209,7 @@ class BVH {
 
                 bool intersect(Ray& ray, Hit& res, const Vec3& invdir, const int dirIsNeg[3]) const {
                     bvh_intersection_count++;
+                    intersection_count++;
 
                     //if this node is leaf
                     if(left == nullptr && right == nullptr) {
@@ -282,6 +286,11 @@ class BVH {
             dirIsNeg[0] = ray.direction.x < 0 ? 1 : 0;
             dirIsNeg[1] = ray.direction.y < 0 ? 1 : 0;
             dirIsNeg[2] = ray.direction.z < 0 ? 1 : 0;
+
+            if(max_intersection_count < intersection_count)
+                max_intersection_count = intersection_count;
+            intersection_count = 0;
+
             return bvh_root->intersect(ray, res, invdir, dirIsNeg);
         };
 };
