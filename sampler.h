@@ -21,4 +21,18 @@ inline Vec3 randomInUnitSphere() {
     Vec3 v = randVec();
     return normalize(v);
 };
+inline Vec3 randomInHemisphere(const Ray& ray, const Vec3& n) {
+    Vec3 up = n;
+    Vec3 right = normalize(cross(ray.direction, up));
+    Vec3 forward = normalize(cross(right, up));
+    float x, y, z;
+    Vec3 v;
+    do {
+        x = rnd2();
+        y = rnd();
+        z = rnd2();
+    }
+    while(x*x + y*y + z*z > 1.0f);
+    return x*right + y*up + z*forward;
+}
 #endif

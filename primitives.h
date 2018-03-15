@@ -36,6 +36,7 @@ class BVH {
                 std::shared_ptr<BVH_node> right; //right child pointer
                 AABB bbox; //node bounding box
                 std::vector<std::shared_ptr<Primitive>> prim; //node primitives(leaf node only)
+                int splitAxis; //splitting axis
 
                 AABB computeBounds(const std::vector<std::shared_ptr<Primitive>>& prims) const {
                     AABB ret;
@@ -93,6 +94,7 @@ class BVH {
                         ysplit_count++;
                     else
                         zsplit_count++;
+                    splitAxis = axis;
 
                     //if centroidBounds are degenerate make this node as leaf
                     if(centroidBounds.pMin[axis] == centroidBounds.pMax[axis]) {
@@ -224,8 +226,17 @@ class BVH {
 
                     Hit res_left;
                     Hit res_right;
-                    bool hit_left = left->intersect(ray, res_left, invdir, dirIsNeg);
-                    bool hit_right = right->intersect(ray, res_right, invdir, dirIsNeg);
+                    bool hit_left, hit_right = false;
+                    //if direction[axis] is positive, visit left child first
+                    //else visit right child first
+                    if(dirIsNeg[splitAxis] == 0) {
+                        hit_left = left->intersect(ray, res_left, invdir, dirIsNeg);
+                        hit_right = right->intersect(ray, res_right, invdir, dirIsNeg);
+                    }
+                    else {
+                        hit_right = right->intersect(ray, res_right, invdir, dirIsNeg);
+                        hit_left = left->intersect(ray, res_left, invdir, dirIsNeg);
+                    }
 
                     if(hit_left && hit_right) {
                         if(res_left.t < res_right.t)

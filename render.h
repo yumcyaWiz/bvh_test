@@ -50,6 +50,35 @@ class Render {
             }
             img->divide(samples);
         };
+        void render_ao() {
+            for(int k = 0; k < samples; k++) {
+                for(int i = 0; i < img->width; i++) {
+                    #pragma omp parallel for schedule(dynamic, 1)
+                    for(int j = 0; j < img->height; j++) {
+                        float u = (2.0f*i - img->width + rnd())/img->width;
+                        float v = (2.0f*j - img->height + rnd())/img->height;
+                        Ray ray = cam->getRay(u, v);
+
+                        Hit res;
+                        RGB col(0);
+                        if(prims->intersect(ray, res)) {
+                            Ray nextRay(res.hitPos, normalize(randomInHemisphere(ray, res.hitNormal))); 
+                            nextRay.tmax = 1.0f;
+                            if(!prims->intersect(nextRay, res)) {
+                                col = RGB(0.8f);
+                            }
+                        }
+                        else {
+                            col = RGB(1.0f);
+                        }
+                        img->setPixel(i, j, img->getPixel(i, j) + col);
+                    }
+                }
+                if(omp_get_thread_num() == 0)
+                    std::cout << progressbar(k, samples) << " " << percentage(k, samples) << "\r" << std::flush;
+            }
+            img->divide(samples);
+        };
         void render_normal() {
             #pragma omp parallel for schedule(dynamic, 1)
             for(int i = 0; i < img->width; i++) {

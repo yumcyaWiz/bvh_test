@@ -20,7 +20,7 @@
 
 int main() {
     Image* img = new Image(512, 512);
-    Camera* cam = new Camera(Vec3(0, 5, -10), Vec3(0, 0, 1), 1.0);
+    Camera* cam = new Camera(Vec3(-10, 1, 0), Vec3(1, 0, 0), 1.0);
 
     Primitives* prims = new Primitives();
     
@@ -30,7 +30,7 @@ int main() {
     }
     */
     
-    prims->loadObj(Vec3(0, 0, 0), 1.0f, "dragon.obj");
+    prims->loadObj(Vec3(0, 0, 0), 0.01f, "sponza_simple.obj");
     prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
     //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     Timer timer;
@@ -38,7 +38,7 @@ int main() {
     prims->constructBVH();
     timer.stop();
 
-    int samples = 200;
+    int samples = 10;
     Render render(img, cam, prims, samples);
     timer.start();
     render.render();

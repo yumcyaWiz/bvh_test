@@ -9,6 +9,7 @@ class Ray {
         int hit_count = 0;
         float factor = 1.0f;
 
+        Ray() {};
         Ray(const Vec3& origin, const Vec3& direction) : origin(origin), direction(direction) {};
 
         Vec3 operator()(float t) const {
