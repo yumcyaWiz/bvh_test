@@ -72,11 +72,13 @@ class BVH {
                         std::cerr << "prims is empty" << std::endl;
                         std::exit(1);
                     }
-                    else if(prims.size() == 1) {
+                    else if(prims.size() <= 4) {
                         leaf_count++;
                         left = right = nullptr;
-                        prim.push_back(prims[0]);
-                        bbox = prims[0]->aabb();
+                        for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                            prim.push_back((*itr));
+                        }
+                        bbox = computeBounds(prims);
                         return;
                     }
 
@@ -106,7 +108,7 @@ class BVH {
                         return;
                     }
 
-                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE || prims.size() <= 2) {
+                    if(partition_type == BVH_PARTITION_TYPE::EQSIZE) {
                         std::size_t half_size = prims.size()/2;
                         std::nth_element(prims.begin(), prims.begin() + half_size, prims.end(), [axis](std::shared_ptr<Primitive> x, std::shared_ptr<Primitive> y) {
                                 return x->aabb().center[axis] < y->aabb().center[axis];
