@@ -124,6 +124,25 @@ class Render {
                 }
             }
         }
+        void render_bvh_frame() {
+            for(int i = 0; i < img->width; i++) {
+                for(int j = 0; j < img->height; j++) {
+                    float u = (2.0f*i - img->width)/img->width;
+                    float v = (2.0f*j - img->height)/img->height;
+                    Ray ray = cam->getRay(u, v);
+                    Hit res;
+                    bool edge = false;
+                    bool hit = prims->intersect_visualize(ray, res, edge);
+
+                    if(edge)
+                        img->setPixel(i, j, RGB(1.0f));
+                    else
+                        img->setPixel(i, j, RGB(0.0f));
+                }
+                if(omp_get_thread_num() == 0)
+                    std::cout << progressbar(i, img->width) << " " << percentage(i, img->width) << "\r" << std::flush;
+            }
+        }
 
         void output() const {
             img->gamma_correction();

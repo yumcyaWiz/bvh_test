@@ -63,6 +63,22 @@ class BVH {
                     }
                     return hit;
                 }
+                bool prim_intersect_visualize(const std::vector<std::shared_ptr<Primitive>>& prims, Ray& ray, Hit& res, bool &edge) const {
+                    bool hit = false;
+                    res.t = ray.tmax;
+                    Hit prim_res;
+                    for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                        bool bhit = (*itr)->aabb().intersect_visualize(ray, edge);
+                        bool prim_hit = (*itr)->intersect(ray, prim_res);
+                        if(prim_hit) {
+                            hit = true;
+                            if(prim_res.t < res.t) {
+                                res = prim_res;
+                            }
+                        }
+                    }
+                    return hit;
+                }
 
                 BVH_node(std::shared_ptr<Primitive> _prim) {
                     left = right = nullptr;
@@ -262,6 +278,51 @@ class BVH {
                     else
                         return false;
                 };
+                bool intersect_visualize(Ray& ray, Hit& res, bool &edge) const {
+                    bvh_intersection_count++;
+                    intersection_count++;
+
+                    //if this node is leaf
+                    if(left == nullptr && right == nullptr) {
+                        primitive_intersection_count++;
+                        bool hit = prim_intersect(prim, ray, res);
+                        bbox.intersect_visualize(ray, edge);
+                        return hit;
+                    };
+
+                    //ray hits node's bounding box?
+                    if(!bbox.intersect_visualize(ray, edge))
+                        return false;
+
+                    ray.hit_count++;
+                    ray.factor *= 0.99f;
+
+                    Hit res_left;
+                    Hit res_right;
+                    bool hit_left, hit_right = false;
+                    //if direction[axis] is positive, visit left child first
+                    //else visit right child first
+                    hit_left = left->intersect_visualize(ray, res_left, edge);
+                    hit_right = right->intersect_visualize(ray, res_right, edge);
+
+                    if(hit_left && hit_right) {
+                        if(res_left.t < res_right.t)
+                            res = res_left;
+                        else
+                            res = res_right;
+                        return true;
+                    }
+                    else if(hit_left) {
+                        res = res_left;
+                        return true;
+                    }
+                    else if(hit_right) {
+                        res = res_right;
+                        return true;
+                    }
+                    else
+                        return false;
+                };
         };
 
 
@@ -292,6 +353,9 @@ class BVH {
             intersection_count = 0;
 
             return bvh_root->intersect(ray, res, invdir, dirIsNeg);
+        };
+        bool intersect_visualize(Ray& ray, Hit& res, bool &edge) const {
+            return bvh_root->intersect_visualize(ray, res, edge);
         };
 };
 
@@ -505,6 +569,9 @@ class Primitives {
                 }
             }
             return hit;
+        };
+        bool intersect_visualize(Ray& ray, Hit& res, bool &edge) const {
+            return bvh->intersect_visualize(ray, res, edge);
         };
         AABB aabb() const {
             AABB bbox;

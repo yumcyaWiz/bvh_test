@@ -51,6 +51,88 @@ class AABB {
             }
             return true;
         };
+
+
+        bool pointOnEdge(const Vec3& p, float thre_factor) const {
+            float xthre = (pMax.x - pMin.x)*thre_factor;
+            float ythre = (pMax.y - pMin.y)*thre_factor;
+            float zthre = (pMax.z - pMin.z)*thre_factor;
+            xthre = thre_factor;
+            ythre = thre_factor;
+            zthre = thre_factor;
+            return (
+                    (std::abs(p.x - pMax.x) < xthre && std::abs(p.z - pMin.z) < zthre) ||
+                    (std::abs(p.x - pMax.x) < xthre && std::abs(p.z - pMax.z) < zthre) ||
+                    (std::abs(p.x - pMin.x) < zthre && std::abs(p.z - pMin.z) < zthre) ||
+                    (std::abs(p.x - pMin.x) < zthre && std::abs(p.z - pMax.z) < zthre) ||
+                    (std::abs(p.y - pMin.y) < ythre && std::abs(p.z - pMin.z) < zthre) ||
+                    (std::abs(p.y - pMin.y) < ythre && std::abs(p.z - pMax.z) < zthre) ||
+                    (std::abs(p.y - pMax.y) < ythre && std::abs(p.z - pMin.z) < zthre) ||
+                    (std::abs(p.y - pMax.y) < ythre && std::abs(p.z - pMax.z) < zthre) ||
+                    (std::abs(p.y - pMin.y) < ythre && std::abs(p.x - pMin.x) < xthre) ||
+                    (std::abs(p.y - pMin.y) < ythre && std::abs(p.x - pMax.x) < xthre) ||
+                    (std::abs(p.y - pMax.y) < ythre && std::abs(p.x - pMin.x) < xthre) ||
+                    (std::abs(p.y - pMax.y) < ythre && std::abs(p.x - pMax.x) < xthre));
+        };
+        bool intersect_visualize(const Ray& ray, bool &edge) const {
+            float t0 = ray.tmin;
+            float t1 = ray.tmax;
+            for(int i = 0; i < 3; i++) {
+                float tNear = (pMin[i] - ray.origin[i])/ray.direction[i];
+                float tFar = (pMax[i] - ray.origin[i])/ray.direction[i];
+                
+                if(tNear > tFar) std::swap(tNear, tFar);
+
+                t0 = tNear > t0 ? tNear : t0;
+                t1 = tFar < t1 ? tFar : t1;
+                if(t0 > t1) return false;
+            }
+            Vec3 hitPos_near = ray(t0);
+            Vec3 hitPos_far = ray(t1);
+            constexpr float thre = 0.03f;
+            edge = (pointOnEdge(hitPos_near, thre) || pointOnEdge(hitPos_far, thre));
+
+            /*
+            Vec3 p1 = pMin;
+            Vec3 p2 = Vec3(pMax.x, pMin.y, pMin.z);
+            Vec3 p3 = Vec3(pMax.x, pMin.y, pMax.z);
+            Vec3 p4 = Vec3(pMin.x, pMax.y, pMin.z);
+            Vec3 p5 = Vec3(pMin.x, pMax.y, pMin.z);
+            Vec3 p6 = Vec3(pMax.x, pMin.y, pMax.z);
+            Vec3 p7 = pMax;
+            Vec3 p8 = Vec3(pMin.x, pMax.y, pMax.z);
+
+            constexpr float thre = 0.1f;
+            Vec3 dir1, dir2;
+            dir1 = normalize(p1 - hitPos_near);
+            dir2 = normalize(p7 - hitPos_near);
+            if(std::abs(dot(dir1, dir2)) < thre) 
+                edge = true;
+            dir1 = normalize(p2 - hitPos_near);
+            dir2 = normalize(p8 - hitPos_near);
+            if(std::abs(dot(dir1, dir2)) < thre)
+                edge = true;
+            dir1 = normalize(p3 - hitPos_near);
+            dir2 = normalize(p5 - hitPos_near);
+            if(std::abs(dot(dir1, dir2)) < thre)
+                edge = true;
+
+            dir1 = normalize(p1 - hitPos_far);
+            dir2 = normalize(p7 - hitPos_far);
+            if(std::abs(dot(dir1, dir2)) < thre)
+                edge = true;
+            dir1 = normalize(p2 - hitPos_far);
+            dir2 = normalize(p8 - hitPos_far);
+            if(std::abs(dot(dir1, dir2)) < thre)
+                edge = true;
+            dir1 = normalize(p3 - hitPos_far);
+            dir2 = normalize(p5 - hitPos_far);
+            if(std::abs(dot(dir1, dir2)) < thre)
+                edge = true;
+            */
+
+            return true;
+        };
         bool intersect2(const Ray& ray, const Vec3& invdir, const int dirIsNeg[3]) const {
             const AABB& bounds = *this;
 

@@ -19,8 +19,8 @@
 
 
 int main() {
-    Image* img = new Image(512, 512);
-    Camera* cam = new Camera(Vec3(0, 1, -2), Vec3(0, 0, 1), 1.0);
+    Image* img = new Image(800, 800);
+    Camera* cam = new Camera(Vec3(0, 5, -13), Vec3(0, 0, 1), 1.0);
 
     Primitives* prims = new Primitives();
     
@@ -30,9 +30,10 @@ int main() {
     }
     */
     
-    prims->loadObj(Vec3(0, 0, 0), 10.0f, "bunny.obj");
+    prims->loadObj(Vec3(0, 0, 0), 1.0f, "dragon.obj");
     //prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
     //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
+    //prims->add(new Sphere(Vec3(0, 5, 0), 1.0f));
     Timer timer;
     timer.start();
     prims->constructBVH();
@@ -41,7 +42,7 @@ int main() {
     int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render_bvh();
+    render.render_bvh_frame();
     timer.stop();
     std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;
     std::cout << "Primitive Intersection Count:" << (float)primitive_intersection_count << std::endl;
