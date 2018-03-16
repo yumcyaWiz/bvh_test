@@ -24,7 +24,7 @@ int main() {
 
     Timer timer;
     timer.start();
-    prims.constructBVH();
+    prims.constructBVH(4, BVH_PARTITION_TYPE::SAH);
     timer.stop("BVH Construction:");
 
     AABB objAABB = prims.aabb();
@@ -76,7 +76,7 @@ int main() {
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         t += elapsed;
     }
-    std::cout << "Max Intersection Count:" << max_intersection_count << std::endl;
+    //std::cout << "Max Intersection Count:" << max_intersection_count << std::endl;
     std::cout << "Total Ray Count:" << ray_count << std::endl;
     std::cout << "Benchmark:" << t/nTest << "ms" << std::endl;
 }

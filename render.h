@@ -80,7 +80,7 @@ class Render {
             img->divide(samples);
         };
         void render_normal() {
-            #pragma omp parallel for schedule(dynamic, 1)
+            //#pragma omp parallel for schedule(dynamic, 1)
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {
                     float u = (2.0f*i - img->width)/img->width;
@@ -124,6 +124,7 @@ class Render {
                 }
             }
         }
+        /*
         void render_bvh_frame() {
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {
@@ -143,6 +144,7 @@ class Render {
                     std::cout << progressbar(i, img->width) << " " << percentage(i, img->width) << "\r" << std::flush;
             }
         }
+        */
 
         void output() const {
             img->gamma_correction();

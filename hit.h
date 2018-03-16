@@ -3,7 +3,7 @@
 #include "vec3.h"
 class Hit {
     public:
-        float t;
+        float t = 10000.f;
         Vec3 hitPos;
         Vec3 hitNormal;
 

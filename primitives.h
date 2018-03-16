@@ -9,6 +9,7 @@
 #include "sampler.h"
 
 
+/*
 static int node_count = 0;
 static int leaf_count = 0;
 
@@ -18,6 +19,7 @@ static int zsplit_count = 0;
 
 static int bvh_intersection_count = 0;
 static int primitive_intersection_count = 0;
+*/
 
 static int max_intersection_count = 0;
 static int intersection_count = 0;
@@ -31,6 +33,302 @@ enum class BVH_PARTITION_TYPE {
 };
 
 
+class BVH {
+    public:
+        //BVH Node Data Structure
+        struct BVHNode {
+            AABB bbox; //node bounding box
+            BVHNode* left; //node left child
+            BVHNode* right; //node right child
+            int splitAxis; //node splitting axis
+            int indexOffset; //first index of orderedPrimitives
+            int nPrims; //the number of primitives in this node
+
+            BVHNode() {};
+
+            //make leaf node
+            void initLeaf(int _indexOffset, int _nPrims, const AABB& _bbox) {
+                bbox = _bbox;
+                left = right = nullptr;
+                indexOffset = _indexOffset;
+                nPrims = _nPrims;
+            };
+            //make interior node
+            void initNode(int _splitAxis, BVHNode* _left, BVHNode* _right) {
+                bbox = mergeAABB(_left->bbox, _right->bbox);
+                left = _left;
+                right = _right;
+                splitAxis = _splitAxis;
+                nPrims = 0;
+            };
+            //node intersection
+            bool intersect(Ray& ray, Hit& res, const Vec3& invDir, int dirIsNeg[3], const std::vector<std::shared_ptr<Primitive>> &prims) const {
+                //bbox intersection
+                if(!bbox.intersect2(ray, invDir, dirIsNeg)) {
+                    return false;
+                }
+
+                //if this node is leaf
+                if(nPrims > 0) {
+                    bool hit = false;
+                    for(int i = 0; i < nPrims; i++) {
+                        int index = indexOffset + i;
+                        Hit res_prim;
+                        bool prim_hit = prims[index]->intersect(ray, res_prim);
+                        if(prim_hit) {
+                            hit = true;
+                            if(res_prim.t < res.t) {
+                                res = res_prim;
+                            }
+                        }
+                    }
+
+                    if(hit && res.t < ray.tmax) {
+                        ray.tmax = res.t;
+                    }
+                    return hit;
+                };
+
+                //call intersect for left and right child
+                Hit res_left, res_right;
+                bool hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims);
+                bool hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims);
+
+                //return closer hit
+                if(hit_left && hit_right) {
+                    if(res_left.t < res_right.t)
+                        res = res_left;
+                    else
+                        res = res_right;
+                    return true;
+                }
+                else if(hit_left) {
+                    res = res_left;
+                    return true;
+                }
+                else if(hit_right) {
+                    res = res_right;
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            };
+        };
+
+
+        struct BVHPrimitiveInfo {
+            int primIndex;
+            AABB bbox;
+            Vec3 centroid;
+
+            BVHPrimitiveInfo() {};
+            BVHPrimitiveInfo(int _primIndex, const AABB& _bbox) : primIndex(_primIndex), bbox(_bbox), centroid(0.5f*_bbox.pMin + 0.5f*_bbox.pMax) {};
+        };
+
+
+        //bvh root node
+        BVHNode* bvh_root;
+        //primitives array
+        std::vector<std::shared_ptr<Primitive>> prims;
+        //the maximum number of primitives in leaf node
+        const int maxPrimsInLeaf = 4;
+        //bvh partition type
+        BVH_PARTITION_TYPE ptype = BVH_PARTITION_TYPE::SAH;
+
+        int totalNodes = 0;
+        int totalLeaves = 0;
+        int xsplitCount = 0;
+        int ysplitCount = 0;
+        int zsplitCount = 0;
+
+        BVH(std::vector<std::shared_ptr<Primitive>> &_prims, int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : prims(_prims), maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
+            //if primitives is empty, terminate
+            if(_prims.size() == 0) {
+                std::cerr << "Primitives is empty!" << std::endl;
+                std::exit(1);
+            }
+
+            //initialize BVHPrimitiveInfo
+            std::vector<BVHPrimitiveInfo> primitiveInfo(_prims.size());
+            for(size_t i = 0; i < _prims.size(); i++) {
+                primitiveInfo[i] = BVHPrimitiveInfo(i, _prims[i]->aabb());
+            }
+
+            //ordered primitives so that leaf nodes can access to the primitive
+            std::vector<std::shared_ptr<Primitive>> orderedPrims;
+
+            //constructBVH
+            bvh_root = makeBVHNode(0, _prims.size(), primitiveInfo, orderedPrims, ptype, &totalNodes, &totalLeaves);
+            //swap prims with orderedPrims;
+            prims.swap(orderedPrims);
+
+            //show info
+            std::cout << "totalNodes:" << totalNodes << std::endl;
+            std::cout << "totalLeaves:" << totalLeaves << std::endl;
+            std::cout << "XSplitCount:" << xsplitCount << std::endl;
+            std::cout << "YSplitCount:" << ysplitCount << std::endl;
+            std::cout << "ZSplitCount:" << zsplitCount << std::endl;
+        };
+        bool intersect(Ray& ray, Hit& res) const {
+            res.t = ray.tmax;
+            Vec3 invDir = 1.0f/ray.direction;
+            int dirIsNeg[3] = {ray.direction.x < 0, ray.direction.y < 0, ray.direction.z < 0};
+            return bvh_root->intersect(ray, res, invDir, dirIsNeg, prims);
+        };
+
+
+    private:
+        BVHNode* makeBVHNode(int start, int end, std::vector<BVHPrimitiveInfo> &primitiveInfo, std::vector<std::shared_ptr<Primitive>> &orderedPrims, BVH_PARTITION_TYPE ptype, int *totalNodes, int *totalLeaves) {
+            //make a new node
+            (*totalNodes)++;
+            BVHNode* node = new BVHNode();
+
+            //the number of primitives in this node
+            int nPrims = end - start;
+
+            //bounding box that encloses all the primitives in this node
+            AABB bounds;
+            for(int i = start; i < end; i++) {
+                bounds = mergeAABB(bounds, primitiveInfo[i].bbox);
+            }
+
+            //if the number of primitives is less than maxPrimsInLeaf
+            //make leaf node
+            if(nPrims <= maxPrimsInLeaf) {
+                int indexOffset = orderedPrims.size();
+
+                //push primitives in this node to the orderedPrims
+                for(int i = start; i < end; i++) {
+                    orderedPrims.push_back(prims[primitiveInfo[i].primIndex]);
+                }
+
+                (*totalLeaves)++;
+                node->initLeaf(indexOffset, nPrims, bounds);
+                return node;
+            }
+
+            //primitive centroid bounds
+            AABB centroidBounds;
+            for(int i = start; i < end; i++) {
+                centroidBounds = mergeAABB(centroidBounds, primitiveInfo[i].centroid);
+            }
+            //choose splitting axis
+            int axis = maximumExtent(centroidBounds);
+            if(axis == 0) xsplitCount++;
+            else if(axis == 1) ysplitCount++;
+            else zsplitCount++;
+
+            
+            //if centroidBounds is degenerate, make leaf node
+            if(centroidBounds.pMin[axis] == centroidBounds.pMax[axis]) {
+                int indexOffset = orderedPrims.size();
+                for(int i = start; i < end; i++) {
+                    orderedPrims.push_back(prims[primitiveInfo[i].primIndex]);
+                }
+                (*totalLeaves)++;
+                node->initLeaf(indexOffset, nPrims, bounds);
+                return node;
+            }
+
+
+            //splitting
+            int mid = (start + end)/2;
+            switch(ptype) {
+                case BVH_PARTITION_TYPE::CENTER: {
+                    float midPoint = 0.5f*centroidBounds.pMin[axis] + 0.5f*centroidBounds.pMax[axis];
+                    BVHPrimitiveInfo* midPtr = std::partition(&primitiveInfo[start], &primitiveInfo[end-1]+1, [axis, midPoint](const BVHPrimitiveInfo &x) {
+                            return x.centroid[axis] < midPoint;
+                            });
+                    mid = midPtr - &primitiveInfo[0];
+
+                    //if midPoint is degenerate, switch to EQSIZE splitting
+                    if(mid != start && mid != end)
+                        break;
+                                                 }
+                case BVH_PARTITION_TYPE::EQSIZE: {
+                    mid = (start + end)/2;
+                    std::nth_element(&primitiveInfo[start], &primitiveInfo[mid], &primitiveInfo[end-1]+1, [axis](const BVHPrimitiveInfo &x, const BVHPrimitiveInfo &y) {
+                            return x.centroid[axis] < y.centroid[axis];
+                            });
+                    break;
+                                                 }
+                default:
+                    //there are nBuckets splitting position on splitting axis
+                    //calculate SAH cost for each splitting position and choose the lowest cost position
+                    constexpr int nBuckets = 12;
+                    struct BucketInfo {
+                        int primCount = 0;
+                        AABB bbox;
+                    };
+
+                    //precompute SAH elements
+                    BucketInfo buckets[nBuckets];
+                    for(int i = start; i < end; i++) {
+                        AABB bbox = primitiveInfo[i].bbox;
+                        int b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid)[axis];
+                        if(b == nBuckets) b = nBuckets - 1;
+                        buckets[b].primCount++;
+                        buckets[b].bbox = mergeAABB(buckets[b].bbox, bbox);
+                    }
+
+                    //calculate SAH cost
+                    float cost[nBuckets - 1];
+                    for(int i = 0; i < nBuckets - 1; i++) {
+                        int count0 = 0;
+                        int count1 = 0;
+                        AABB b0, b1;
+                        for(int j = 0; j <= i; j++) {
+                            count0 += buckets[j].primCount;
+                            b0 = mergeAABB(b0, buckets[j].bbox);
+                        }
+                        for(int j = i+1; j < nBuckets - 1; j++) {
+                            count1 += buckets[j].primCount;
+                            b1 = mergeAABB(b1, buckets[j].bbox);
+                        }
+                        cost[i] = 0.125f + (count0*b0.surfaceArea() + count1*b1.surfaceArea())/bounds.surfaceArea();
+                    }
+
+                    //choose the lowest cost position
+                    float minCost = cost[0];
+                    int splitPosition = 0;
+                    for(int i = 1; i < nBuckets - 1; i++) {
+                        if(cost[i] < minCost) {
+                            minCost = cost[i];
+                            splitPosition = i;
+                        }
+                    }
+
+                    float leafCost = nPrims;
+                    if(minCost < leafCost) {
+                        BVHPrimitiveInfo* midPtr = std::partition(&primitiveInfo[start], &primitiveInfo[end-1]+1, [=](const BVHPrimitiveInfo &x) {
+                                int b = nBuckets * centroidBounds.offset(x.centroid)[axis];
+                                if(b == nBuckets) b = nBuckets - 1;
+                                return b <= splitPosition;
+                                });
+                        mid = midPtr - &primitiveInfo[0];
+                    }
+                    else {
+                        int indexOffset = orderedPrims.size();
+                        for(int i = start; i < end; i++) {
+                            orderedPrims.push_back(prims[primitiveInfo[i].primIndex]);
+                        }
+                        (*totalLeaves)++;
+                        node->initLeaf(indexOffset, nPrims, bounds);
+                        return node;
+                    }
+            }
+
+            //make node
+            BVHNode* node_left = makeBVHNode(start, mid, primitiveInfo, orderedPrims, ptype, totalNodes, totalLeaves);
+            BVHNode* node_right = makeBVHNode(mid, end, primitiveInfo, orderedPrims, ptype, totalNodes, totalLeaves);
+            node->initNode(axis, node_left, node_right);
+            return node;
+        };
+};
+
+
+/*
 class BVH {
     private:
         struct BVH_node {
@@ -358,6 +656,7 @@ class BVH {
             return bvh_root->intersect_visualize(ray, res, edge);
         };
 };
+*/
 
 
 /*
@@ -551,8 +850,8 @@ class Primitives {
             std::cout << "vertex:" << vertex_count << std::endl;
         };
 
-        void constructBVH() {
-            bvh = std::shared_ptr<BVH>(new BVH(prims));
+        void constructBVH(int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) {
+            bvh = std::shared_ptr<BVH>(new BVH(prims, maxPrimsInLeaf, ptype));
         };
         bool intersect(Ray& ray, Hit& res) const {
             return bvh->intersect(ray, res);
@@ -570,9 +869,11 @@ class Primitives {
             }
             return hit;
         };
+        /*
         bool intersect_visualize(Ray& ray, Hit& res, bool &edge) const {
             return bvh->intersect_visualize(ray, res, edge);
         };
+        */
         AABB aabb() const {
             AABB bbox;
             for(auto itr = prims.begin(); itr != prims.end(); itr++) {

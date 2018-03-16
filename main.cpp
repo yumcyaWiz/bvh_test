@@ -19,7 +19,7 @@
 
 
 int main() {
-    Image* img = new Image(800, 800);
+    Image* img = new Image(512, 512);
     Camera* cam = new Camera(Vec3(0, 5, -13), Vec3(0, 0, 1), 1.0);
 
     Primitives* prims = new Primitives();
@@ -32,23 +32,27 @@ int main() {
     
     prims->loadObj(Vec3(0, 0, 0), 1.0f, "dragon.obj");
     //prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
-    //prims.add(new Sphere(Vec3(0, -10001.5, 0), 10000));
+    //prims->add(new Sphere(Vec3(0, 2, 0), 2.0f));
+    //prims->add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     //prims->add(new Sphere(Vec3(0, 5, 0), 1.0f));
     Timer timer;
     timer.start();
-    prims->constructBVH();
+    prims->constructBVH(4, BVH_PARTITION_TYPE::SAH);
     timer.stop();
 
     int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render_bvh_frame();
+    render.render_normal();
     timer.stop();
+    /*
     std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;
     std::cout << "Primitive Intersection Count:" << (float)primitive_intersection_count << std::endl;
     std::cout << "node/primitive intersection:" << (float)primitive_intersection_count/bvh_intersection_count*100 << "%" << std::endl;
 
     std::cout << "Max Intersection Count:" << max_intersection_count << std::endl;
+    */
 
-    render.output();
+    //render.output();
+    img->ppm_output("output.ppm");
 }
