@@ -315,10 +315,19 @@ class BVH {
                             count1 += buckets[j].primCount;
                             b1 = mergeAABB(b1, buckets[j].bbox);
                         }
-                        cost[i] = 0.125f + (count0*b0.surfaceArea() + count1*b1.surfaceArea())/bounds.surfaceArea();
 
-                        if(std::isnan(cost[i])) {
-                            cost[i] = 10000;
+                        float b0area = b0.surfaceArea();
+                        float b1area = b1.surfaceArea();
+                        if(!std::isinf(b0area) && !std::isinf(b1area))
+                            cost[i] = 0.125f + (count0*b0area + count1*b1area)/bounds.surfaceArea();
+                        else if(std::isinf(b0area) && !std::isinf(b1area))
+                            cost[i] = 0.125f + (count1*b1area)/bounds.surfaceArea();
+                        else if(!std::isinf(b0area) && std::isinf(b1area))
+                            cost[i] = 0.125f + (count0*b0area)/bounds.surfaceArea();
+                        else {
+                            std::cerr << "SAH Cost is both nan" << std::endl;
+                            std::cerr << "b0Area:" << b0area << " b1Area:" << b1area << std::endl;
+                            std::exit(1);
                         }
                     }
 
