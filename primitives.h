@@ -90,9 +90,16 @@ class BVH {
                 };
 
                 //call intersect for left and right child
+                bool hit_left, hit_right;
                 Hit res_left, res_right;
-                bool hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims);
-                bool hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims);
+                if(dirIsNeg[splitAxis] == 0) {
+                    hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims);
+                    hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims);
+                }
+                else {
+                    hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims);
+                    hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims);
+                }
 
                 //return closer hit
                 if(hit_left && hit_right) {
@@ -164,6 +171,7 @@ class BVH {
             prims.swap(orderedPrims);
 
             //show info
+            std::cout << "BVH Construction Finished!" << std::endl;
             std::cout << "totalNodes:" << totalNodes << std::endl;
             std::cout << "totalLeaves:" << totalLeaves << std::endl;
             std::cout << "XSplitCount:" << xsplitCount << std::endl;
