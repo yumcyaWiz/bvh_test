@@ -80,8 +80,8 @@ class Render {
             img->divide(samples);
         };
         void render_normal() {
-            //#pragma omp parallel for schedule(dynamic, 1)
             for(int i = 0; i < img->width; i++) {
+                #pragma omp parallel for schedule(dynamic, 1)
                 for(int j = 0; j < img->height; j++) {
                     float u = (2.0f*i - img->width)/img->width;
                     float v = (2.0f*j - img->height)/img->height;
@@ -101,7 +101,6 @@ class Render {
             }
         };
         void render_bvh() {
-            //#pragma omp parallel for schedule(dynamic, 1)
             int isect_count[img->width][img->height];
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {

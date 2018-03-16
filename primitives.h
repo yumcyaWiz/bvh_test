@@ -9,19 +9,6 @@
 #include "sampler.h"
 
 
-/*
-static int node_count = 0;
-static int leaf_count = 0;
-
-static int xsplit_count = 0;
-static int ysplit_count = 0;
-static int zsplit_count = 0;
-
-static int bvh_intersection_count = 0;
-static int primitive_intersection_count = 0;
-*/
-
-
 enum class BVH_PARTITION_TYPE {
     EQSIZE,
     CENTER,
@@ -75,9 +62,8 @@ class BVH {
                         bool prim_hit = prims[index]->intersect(ray, res_prim);
                         if(prim_hit) {
                             hit = true;
-                            if(res_prim.t < res.t) {
+                            if(res_prim.t < res.t)
                                 res = res_prim;
-                            }
                         }
                     }
 
@@ -296,7 +282,7 @@ class BVH {
                             });
                     break;
                                                  }
-                default:
+                default: {
                     //there are nBuckets splitting position on splitting axis
                     //calculate SAH cost for each splitting position and choose the lowest cost position
                     constexpr int nBuckets = 12;
@@ -308,11 +294,11 @@ class BVH {
                     //precompute SAH elements
                     BucketInfo buckets[nBuckets];
                     for(int i = start; i < end; i++) {
-                        AABB bbox = primitiveInfo[i].bbox;
+                        AABB prim_bbox = primitiveInfo[i].bbox;
                         int b = nBuckets * centroidBounds.offset(primitiveInfo[i].centroid)[axis];
                         if(b == nBuckets) b = nBuckets - 1;
                         buckets[b].primCount++;
-                        buckets[b].bbox = mergeAABB(buckets[b].bbox, bbox);
+                        buckets[b].bbox = mergeAABB(buckets[b].bbox, prim_bbox);
                     }
 
                     //calculate SAH cost
@@ -330,6 +316,10 @@ class BVH {
                             b1 = mergeAABB(b1, buckets[j].bbox);
                         }
                         cost[i] = 0.125f + (count0*b0.surfaceArea() + count1*b1.surfaceArea())/bounds.surfaceArea();
+
+                        if(std::isnan(cost[i])) {
+                            cost[i] = 10000;
+                        }
                     }
 
                     //choose the lowest cost position
@@ -360,6 +350,7 @@ class BVH {
                         node->initLeaf(indexOffset, nPrims, bounds);
                         return node;
                     }
+                         }
             }
 
             //make node
