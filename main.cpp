@@ -40,10 +40,10 @@ int main() {
     prims->constructBVH(4, BVH_PARTITION_TYPE::SAH);
     timer.stop();
 
-    int samples = 200;
+    int samples = 1000;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render();
+    render.render_bvh();
     timer.stop();
     /*
     std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;

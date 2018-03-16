@@ -146,6 +146,21 @@ class BVH {
         int maximum_intersect_count;
 
 
+        //LinearBVHNode
+        //BVH Node Tree converted to depth-first array
+        struct linearBVHNode {
+            AABB bbox; //node bounding box
+            union {
+                int indexOffset; //the first index of primitives in prims
+                int rightChildOffset; //the index to the right child in LinearBVHNode array
+            };
+            uint16_t nPrims; //the number of prims
+            uint8_t splitAxis; //splitting axis
+            uint8_t pad[1]; //padding
+        };
+        linearBVHNode *linearNodes;
+
+
         BVH(std::vector<std::shared_ptr<Primitive>> &_prims, int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : prims(_prims), maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
             //if primitives is empty, terminate
             if(_prims.size() == 0) {
@@ -184,7 +199,21 @@ class BVH {
             std::cout << "XSplitCount:" << xsplitCount << std::endl;
             std::cout << "YSplitCount:" << ysplitCount << std::endl;
             std::cout << "ZSplitCount:" << zsplitCount << std::endl;
+
+            //initialize linearNodes
+            linearNodes = new linearBVHNode[totalNodes];
+            //construct LinearBVHNode Array
+            int offset = 0;
+            makeLinearBVHNode(bvh_root, &offset);
+
+            std::cout << "LinearBVH Construction Finished!" << std::endl;
+
         };
+        ~BVH() {
+            delete[] linearNodes;
+        };
+
+
         bool intersect(Ray& ray, Hit& res) {
             res.t = ray.tmax;
             //calculate inversed-direction preliminary
@@ -195,7 +224,8 @@ class BVH {
             //calculate intersection from the root node
             intersect_count = 0;
             prim_intersect_count = 0;
-            bool hit = bvh_root->intersect(ray, res, invDir, dirIsNeg, prims, &intersect_count, &prim_intersect_count);
+            //bool hit = bvh_root->intersect(ray, res, invDir, dirIsNeg, prims, &intersect_count, &prim_intersect_count);
+            bool hit = intersect_linear(ray, res, invDir, dirIsNeg, &intersect_count, &prim_intersect_count);
 
             //update maximum intersection count
             if(intersect_count > maximum_intersect_count)
@@ -203,6 +233,57 @@ class BVH {
 
             return hit;
         };
+
+
+        bool intersect_linear(Ray& ray, Hit& res, const Vec3& invDir, int dirIsNeg[3], int *intersect_count, int *prim_intersect_count) {
+            bool hit = false;
+            int toVisitOffset = 0, currentNodeIndex = 0;
+            int nodesToVisit[64];
+            while(true) {
+                (*intersect_count)++;
+                const linearBVHNode* node = &linearNodes[currentNodeIndex];
+
+                if(node->bbox.intersect2(ray, invDir, dirIsNeg)) {
+                    if(node->nPrims > 0) {
+                        for(int i = 0; i < node->nPrims; i++) {
+                            int index = node->indexOffset + i;
+                            Hit res_prim;
+                            (*prim_intersect_count)++;
+                            if(prims[index]->intersect(ray, res_prim)) {
+                                hit = true;
+                                if(res_prim.t < res.t) {
+                                    res = res_prim;
+                                }
+                            }
+
+                            if(hit && res.t < ray.tmax) {
+                                ray.tmax = res.t;
+                            }
+                        }
+
+                        if(toVisitOffset == 0) break;
+                        currentNodeIndex = nodesToVisit[--toVisitOffset];
+                    }
+                    else {
+                        if(dirIsNeg[node->splitAxis]) {
+                            nodesToVisit[toVisitOffset++] = currentNodeIndex + 1;
+                            currentNodeIndex = node->rightChildOffset;
+                        }
+                        else {
+                            nodesToVisit[toVisitOffset++] = node->rightChildOffset;
+                            currentNodeIndex++;
+                        }
+                    }
+                }
+                else {
+                    if(toVisitOffset == 0) break;
+                    currentNodeIndex = nodesToVisit[--toVisitOffset];
+                }
+            }
+            return hit;
+        };
+
+
 
 
     private:
@@ -367,6 +448,23 @@ class BVH {
             BVHNode* node_right = makeBVHNode(mid, end, primitiveInfo, orderedPrims, ptype, totalNodes, totalLeaves);
             node->initNode(axis, node_left, node_right);
             return node;
+        };
+        int makeLinearBVHNode(BVHNode* node, int *offset) {
+            linearBVHNode *linearNode = &linearNodes[*offset];
+
+            linearNode->bbox = node->bbox;
+            int _offset = (*offset)++;
+            if(node->nPrims > 0) {
+                linearNode->indexOffset = node->indexOffset;
+                linearNode->nPrims = node->nPrims;
+            }
+            else {
+                linearNode->splitAxis = node->splitAxis;
+                linearNode->nPrims = 0;
+                makeLinearBVHNode(node->left, offset);
+                linearNode->rightChildOffset = makeLinearBVHNode(node->right, offset);
+            }
+            return _offset;
         };
 };
 
