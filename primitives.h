@@ -21,10 +21,6 @@ static int bvh_intersection_count = 0;
 static int primitive_intersection_count = 0;
 */
 
-static int max_intersection_count = 0;
-static int intersection_count = 0;
-
-
 
 enum class BVH_PARTITION_TYPE {
     EQSIZE,
@@ -62,7 +58,8 @@ class BVH {
                 nPrims = 0;
             };
             //node intersection
-            bool intersect(Ray& ray, Hit& res, const Vec3& invDir, int dirIsNeg[3], const std::vector<std::shared_ptr<Primitive>> &prims) const {
+            bool intersect(Ray& ray, Hit& res, const Vec3& invDir, int dirIsNeg[3], const std::vector<std::shared_ptr<Primitive>> &prims, int *intersect_count, int *prim_intersect_count) {
+                (*intersect_count)++;
                 //bbox intersection
                 if(!bbox.intersect2(ray, invDir, dirIsNeg)) {
                     return false;
@@ -74,6 +71,7 @@ class BVH {
                     for(int i = 0; i < nPrims; i++) {
                         int index = indexOffset + i;
                         Hit res_prim;
+                        (*prim_intersect_count)++;
                         bool prim_hit = prims[index]->intersect(ray, res_prim);
                         if(prim_hit) {
                             hit = true;
@@ -93,12 +91,12 @@ class BVH {
                 bool hit_left, hit_right;
                 Hit res_left, res_right;
                 if(dirIsNeg[splitAxis] == 0) {
-                    hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims);
-                    hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims);
+                    hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims, intersect_count, prim_intersect_count);
+                    hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims, intersect_count, prim_intersect_count);
                 }
                 else {
-                    hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims);
-                    hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims);
+                    hit_right = right->intersect(ray, res_right, invDir, dirIsNeg, prims, intersect_count, prim_intersect_count);
+                    hit_left = left->intersect(ray, res_left, invDir, dirIsNeg, prims, intersect_count, prim_intersect_count);
                 }
 
                 //return closer hit
@@ -124,6 +122,7 @@ class BVH {
         };
 
 
+        //BVHPrimitiveInfo is used on constructing BVH nodes, it gives handy information for constructing BVH
         struct BVHPrimitiveInfo {
             int primIndex;
             AABB bbox;
@@ -139,15 +138,27 @@ class BVH {
         //primitives array
         std::vector<std::shared_ptr<Primitive>> prims;
         //the maximum number of primitives in leaf node
-        const int maxPrimsInLeaf = 4;
+        int maxPrimsInLeaf;
         //bvh partition type
         BVH_PARTITION_TYPE ptype = BVH_PARTITION_TYPE::SAH;
 
-        int totalNodes = 0;
-        int totalLeaves = 0;
-        int xsplitCount = 0;
-        int ysplitCount = 0;
-        int zsplitCount = 0;
+        //the number of nodes
+        int totalNodes;
+        //the number of leaf nodes
+        int totalLeaves;
+        //X-Split count
+        int xsplitCount;
+        //Y-Split count
+        int ysplitCount;
+        //Z-Split count
+        int zsplitCount;
+        //intersection count
+        int intersect_count;
+        //primitive intersection count
+        int prim_intersect_count;
+        //maximum intersection count
+        int maximum_intersect_count;
+
 
         BVH(std::vector<std::shared_ptr<Primitive>> &_prims, int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : prims(_prims), maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
             //if primitives is empty, terminate
@@ -155,6 +166,16 @@ class BVH {
                 std::cerr << "Primitives is empty!" << std::endl;
                 std::exit(1);
             }
+
+            //initialize statistic members
+            totalNodes = 0;
+            totalLeaves = 0;
+            xsplitCount = 0;
+            ysplitCount = 0;
+            zsplitCount = 0;
+            intersect_count = 0;
+            prim_intersect_count = 0;
+            maximum_intersect_count = 0;
 
             //initialize BVHPrimitiveInfo
             std::vector<BVHPrimitiveInfo> primitiveInfo(_prims.size());
@@ -178,15 +199,29 @@ class BVH {
             std::cout << "YSplitCount:" << ysplitCount << std::endl;
             std::cout << "ZSplitCount:" << zsplitCount << std::endl;
         };
-        bool intersect(Ray& ray, Hit& res) const {
+        bool intersect(Ray& ray, Hit& res) {
             res.t = ray.tmax;
+            //calculate inversed-direction preliminary
             Vec3 invDir = 1.0f/ray.direction;
+            //ray direction is positive or negative for each element?
             int dirIsNeg[3] = {ray.direction.x < 0, ray.direction.y < 0, ray.direction.z < 0};
-            return bvh_root->intersect(ray, res, invDir, dirIsNeg, prims);
+
+            //calculate intersection from the root node
+            intersect_count = 0;
+            prim_intersect_count = 0;
+            bool hit = bvh_root->intersect(ray, res, invDir, dirIsNeg, prims, &intersect_count, &prim_intersect_count);
+
+            //update maximum intersection count
+            if(intersect_count > maximum_intersect_count)
+                maximum_intersect_count = intersect_count;
+
+            return hit;
         };
 
 
     private:
+        //make bvh node for primitives in the range primitiveInfo[start] ~ primitiveInfo[end]
+        //call makeBVHNode(0, prims.size(), ...) for making root node
         BVHNode* makeBVHNode(int start, int end, std::vector<BVHPrimitiveInfo> &primitiveInfo, std::vector<std::shared_ptr<Primitive>> &orderedPrims, BVH_PARTITION_TYPE ptype, int *totalNodes, int *totalLeaves) {
             //make a new node
             (*totalNodes)++;

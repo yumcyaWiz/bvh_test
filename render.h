@@ -110,7 +110,7 @@ class Render {
                     Ray ray = cam->getRay(u, v);
                     Hit res;
                     prims->intersect(ray, res);
-                    isect_count[i][j] = intersection_count;
+                    isect_count[i][j] = prims->bvh->intersect_count;
                 }
                 if(omp_get_thread_num() == 0)
                     std::cout << progressbar(i, img->width) << " " << percentage(i, img->width) << "\r" << std::flush;
@@ -118,7 +118,7 @@ class Render {
 
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {
-                    float ratio = (float)isect_count[i][j]/max_intersection_count;
+                    float ratio = (float)isect_count[i][j]/prims->bvh->maximum_intersect_count;
                     RGB col = RGB(0, ratio, 0);
                     img->setPixel(i, j, col);
                 }
