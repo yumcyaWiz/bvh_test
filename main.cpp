@@ -45,7 +45,7 @@ int main() {
     int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render_normal();
+    render.render();
     timer.stop();
     /*
     std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;

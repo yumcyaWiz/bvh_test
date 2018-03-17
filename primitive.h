@@ -71,22 +71,22 @@ class Triangle : public Primitive {
         //Moller-Trumbore Algorithm
         bool intersect(const Ray& ray, Hit& hit) const {
             const float eps = 0.000001;
-            Vec3 edge1 = p2 - p1;
-            Vec3 edge2 = p3 - p1;
-            Vec3 h = cross(ray.direction, edge2);
-            float a = dot(edge1, h);
+            const Vec3 edge1 = p2 - p1;
+            const Vec3 edge2 = p3 - p1;
+            const Vec3 h = cross(ray.direction, edge2);
+            const float a = dot(edge1, h);
             if(a >= -eps && a <= eps)
                 return false;
-            float f = 1/a;
-            Vec3 s = ray.origin - p1;
+            const float f = 1/a;
+            const Vec3 s = ray.origin - p1;
             float u = f*dot(s, h);
             if(u < 0.0 || u > 1.0)
                 return false;
-            Vec3 q = cross(s, edge1);
-            float v = f*dot(ray.direction, q);
+            const Vec3 q = cross(s, edge1);
+            const float v = f*dot(ray.direction, q);
             if(v < 0.0 || u + v > 1.0)
                 return false;
-            float t = f*dot(edge2, q);
+            const float t = f*dot(edge2, q);
             if(t <= ray.tmin || t > ray.tmax)
                 return false;
             
@@ -96,12 +96,12 @@ class Triangle : public Primitive {
             return true;
         };
         AABB aabb() const {
-            float minX = std::min(std::min(p1.x, p2.x), p3.x);
-            float minY = std::min(std::min(p1.y, p2.y), p3.y);
-            float minZ = std::min(std::min(p1.z, p2.z), p3.z);
-            float maxX = std::max(std::max(p1.x, p2.x), p3.x);
-            float maxY = std::max(std::max(p1.y, p2.y), p3.y);
-            float maxZ = std::max(std::max(p1.z, p2.z), p3.z);
+            const float minX = std::min(std::min(p1.x, p2.x), p3.x);
+            const float minY = std::min(std::min(p1.y, p2.y), p3.y);
+            const float minZ = std::min(std::min(p1.z, p2.z), p3.z);
+            const float maxX = std::max(std::max(p1.x, p2.x), p3.x);
+            const float maxY = std::max(std::max(p1.y, p2.y), p3.y);
+            const float maxZ = std::max(std::max(p1.z, p2.z), p3.z);
             return AABB(Vec3(minX, minY, minZ), Vec3(maxX, maxY, maxZ));
         };
 };

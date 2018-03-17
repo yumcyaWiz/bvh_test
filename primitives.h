@@ -217,9 +217,9 @@ class BVH {
         bool intersect(Ray& ray, Hit& res) {
             res.t = ray.tmax;
             //calculate inversed-direction preliminary
-            Vec3 invDir = 1.0f/ray.direction;
+            const Vec3 invDir = 1.0f/ray.direction;
             //ray direction is positive or negative for each element?
-            int dirIsNeg[3] = {ray.direction.x < 0, ray.direction.y < 0, ray.direction.z < 0};
+            const int dirIsNeg[3] = {ray.direction.x < 0, ray.direction.y < 0, ray.direction.z < 0};
 
             //calculate intersection from the root node
             intersect_count = 0;
@@ -235,28 +235,29 @@ class BVH {
         };
 
 
-        bool intersect_linear(Ray& ray, Hit& res, const Vec3& invDir, int dirIsNeg[3], int *intersect_count, int *prim_intersect_count) {
+        bool intersect_linear(Ray& ray, Hit& res, const Vec3& invDir, const int dirIsNeg[3], int *intersect_count, int *prim_intersect_count) {
             bool hit = false;
             int toVisitOffset = 0, currentNodeIndex = 0;
             int nodesToVisit[64];
             while(true) {
-                (*intersect_count)++;
+                //(*intersect_count)++;
                 const linearBVHNode* node = &linearNodes[currentNodeIndex];
 
                 if(node->bbox.intersect2(ray, invDir, dirIsNeg)) {
                     if(node->nPrims > 0) {
-                        for(int i = 0; i < node->nPrims; i++) {
-                            int index = node->indexOffset + i;
+                        for(int i = 0; i < node->nPrims; ++i) {
+                            const int index = node->indexOffset + i;
                             Hit res_prim;
-                            (*prim_intersect_count)++;
-                            if(prims[index]->intersect(ray, res_prim)) {
+                            //(*prim_intersect_count)++;
+                            const bool hit_prim = prims[index]->intersect(ray, res_prim);
+                            if(hit_prim) {
                                 hit = true;
                                 if(res_prim.t < res.t) {
                                     res = res_prim;
                                 }
                             }
 
-                            if(hit && res.t < ray.tmax) {
+                            if(hit_prim && res.t < ray.tmax) {
                                 ray.tmax = res.t;
                             }
                         }
@@ -366,7 +367,7 @@ class BVH {
                 default: {
                     //there are nBuckets splitting position on splitting axis
                     //calculate SAH cost for each splitting position and choose the lowest cost position
-                    constexpr int nBuckets = 12;
+                    constexpr int nBuckets = 32;
                     struct BucketInfo {
                         int primCount = 0;
                         AABB bbox;
@@ -399,17 +400,12 @@ class BVH {
 
                         float b0area = b0.surfaceArea();
                         float b1area = b1.surfaceArea();
-                        if(!std::isinf(b0area) && !std::isinf(b1area))
-                            cost[i] = 0.125f + (count0*b0area + count1*b1area)/bounds.surfaceArea();
-                        else if(std::isinf(b0area) && !std::isinf(b1area))
-                            cost[i] = 0.125f + (count1*b1area)/bounds.surfaceArea();
-                        else if(!std::isinf(b0area) && std::isinf(b1area))
-                            cost[i] = 0.125f + (count0*b0area)/bounds.surfaceArea();
-                        else {
-                            std::cerr << "SAH Cost is both nan" << std::endl;
-                            std::cerr << "b0Area:" << b0area << " b1Area:" << b1area << std::endl;
-                            std::exit(1);
-                        }
+                        if(std::isinf(b0area))
+                            b0area = 1000000.0f;
+                        if(std::isinf(b1area))
+                            b1area = 1000000.0f;
+
+                        cost[i] = 0.125f + (count0*b0area + count1*b1area)/bounds.surfaceArea();
                     }
 
                     //choose the lowest cost position

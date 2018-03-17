@@ -138,15 +138,15 @@ class AABB {
 
             float tMin = (bounds[dirIsNeg[0]].x - ray.origin.x) * invdir.x;
             float tMax = (bounds[1 - dirIsNeg[0]].x - ray.origin.x) * invdir.x;
-            float tyMin = (bounds[dirIsNeg[1]].y - ray.origin.y) * invdir.y;
-            float tyMax = (bounds[1 - dirIsNeg[1]].y - ray.origin.y) * invdir.y;
+            const float tyMin = (bounds[dirIsNeg[1]].y - ray.origin.y) * invdir.y;
+            const float tyMax = (bounds[1 - dirIsNeg[1]].y - ray.origin.y) * invdir.y;
             if(tMin > tyMax || tyMin > tMax)
                 return false;
             if(tyMin > tMin) tMin = tyMin;
             if(tyMax < tMax) tMax = tyMax;
 
-            float tzMin = (bounds[dirIsNeg[2]].z - ray.origin.z) * invdir.z;
-            float tzMax = (bounds[1 - dirIsNeg[2]].z - ray.origin.z) * invdir.z;
+            const float tzMin = (bounds[dirIsNeg[2]].z - ray.origin.z) * invdir.z;
+            const float tzMax = (bounds[1 - dirIsNeg[2]].z - ray.origin.z) * invdir.z;
             if(tMin > tzMax || tzMin > tMax)
                 return false;
             if(tzMin > tMin) tMin = tzMin;
