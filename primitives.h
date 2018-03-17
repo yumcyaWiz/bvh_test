@@ -126,7 +126,7 @@ class BVH {
         //the maximum number of primitives in leaf node
         int maxPrimsInLeaf;
         //bvh partition type
-        BVH_PARTITION_TYPE ptype = BVH_PARTITION_TYPE::SAH;
+        BVH_PARTITION_TYPE ptype;
 
         //the number of nodes
         int totalNodes;
