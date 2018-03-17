@@ -1,4 +1,3 @@
-
 #include <string>
 #include <vector>
 #include <cstdlib>
@@ -21,6 +20,8 @@
 int main() {
     Image* img = new Image(512, 512);
     Camera* cam = new Camera(Vec3(0, 5, -10), Vec3(0, 0, 1), 1.0);
+    std::cout << cam->camRight << std::endl;
+    std::cout << cam->camUp << std::endl;
 
     Primitives* prims = new Primitives();
     
@@ -29,9 +30,10 @@ int main() {
         prims.add(new Sphere(Vec3(i - 500, 0, 3), 1.0));
     }
     */
+
     
     prims->loadObj(Vec3(0, 0, 0), 1.0f, "dragon.obj");
-    prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
+    //prims->add(new Sphere(Vec3(0, -10000, 0), 10000.0f));
     //prims->add(new Sphere(Vec3(0, 2, 0), 2.0f));
     //prims->add(new Sphere(Vec3(0, -10001.5, 0), 10000));
     //prims->add(new Sphere(Vec3(0, 5, 0), 1.0f));
@@ -40,10 +42,10 @@ int main() {
     prims->constructBVH(4, BVH_PARTITION_TYPE::SAH);
     timer.stop();
 
-    int samples = 1000;
+    int samples = 100;
     Render render(img, cam, prims, samples);
     timer.start();
-    render.render_bvh();
+    render.render_normal();
     timer.stop();
     /*
     std::cout << "BVH node Intersection Count:" << (float)bvh_intersection_count << std::endl;

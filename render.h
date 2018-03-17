@@ -40,7 +40,7 @@ class Render {
                     #pragma omp parallel for schedule(dynamic, 1)
                     for(int j = 0; j < img->height; j++) {
                         float u = (2.0f*i - img->width + rnd())/img->width;
-                        float v = (2.0f*j - img->height + rnd())/img->height;
+                        float v = -(2.0f*j - img->height + rnd())/img->height;
                         Ray ray = cam->getRay(u, v);
                         img->setPixel(i, j, img->getPixel(i, j) + Li(ray, 0));
                     }
@@ -56,7 +56,7 @@ class Render {
                     #pragma omp parallel for schedule(dynamic, 1)
                     for(int j = 0; j < img->height; j++) {
                         float u = (2.0f*i - img->width + rnd())/img->width;
-                        float v = (2.0f*j - img->height + rnd())/img->height;
+                        float v = -(2.0f*j - img->height + rnd())/img->height;
                         Ray ray = cam->getRay(u, v);
 
                         Hit res;
@@ -84,7 +84,7 @@ class Render {
                 #pragma omp parallel for schedule(dynamic, 1)
                 for(int j = 0; j < img->height; j++) {
                     float u = (2.0f*i - img->width)/img->width;
-                    float v = (2.0f*j - img->height)/img->height;
+                    float v = -(2.0f*j - img->height)/img->height;
                     Ray ray = cam->getRay(u, v);
                     Hit res;
                     RGB col;
@@ -105,7 +105,7 @@ class Render {
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {
                     float u = (2.0f*i - img->width)/img->width;
-                    float v = (2.0f*j - img->height)/img->height;
+                    float v = -(2.0f*j - img->height)/img->height;
                     Ray ray = cam->getRay(u, v);
                     Hit res;
                     prims->intersect(ray, res);
