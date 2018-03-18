@@ -159,6 +159,7 @@ class BVH {
             uint8_t pad[1]; //padding
         };
         linearBVHNode *linearNodes;
+        //std::vector<std::shared_ptr<AABB>> linearNodeAABBs;
 
 
         BVH(std::vector<std::shared_ptr<Primitive>> &_prims, int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : prims(_prims), maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
@@ -445,6 +446,8 @@ class BVH {
             node->initNode(axis, node_left, node_right);
             return node;
         };
+
+
         int makeLinearBVHNode(BVHNode* node, int *offset) {
             linearBVHNode *linearNode = &linearNodes[*offset];
 

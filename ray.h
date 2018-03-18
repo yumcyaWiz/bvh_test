@@ -11,8 +11,6 @@ class Ray {
         Vec3 direction;
         float tmin = 0.01f;
         float tmax = 100000.0f;
-        int hit_count = 0;
-        float factor = 1.0f;
 
         Ray() {};
         Ray(const Vec3& origin, const Vec3& direction) : origin(origin), direction(direction) {

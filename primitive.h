@@ -79,7 +79,7 @@ class Triangle : public Primitive {
                 return false;
             const float f = 1/a;
             const Vec3 s = ray.origin - p1;
-            float u = f*dot(s, h);
+            const float u = f*dot(s, h);
             if(u < 0.0 || u > 1.0)
                 return false;
             const Vec3 q = cross(s, edge1);

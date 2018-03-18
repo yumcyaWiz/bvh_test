@@ -6,3 +6,7 @@ benchmark:
 
 benchmark2:
 	g++ -std=c++14 -Wall -fopenmp -O3 benchmark2.cpp
+
+profile:
+	g++ -std=c++14 profile.cpp -Wall -lprofiler -g
+

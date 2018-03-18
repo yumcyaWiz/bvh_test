@@ -3,4 +3,5 @@
 *.png
 *.jpg
 *.obj
+*.prof
 tiny_obj_loader.h
