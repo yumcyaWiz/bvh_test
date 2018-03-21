@@ -101,6 +101,12 @@ class Render {
             }
         };
         void render_bvh() {
+            BVH* bvh = dynamic_cast<BVH*>(prims);
+            if(bvh == nullptr) {
+                std::cerr << "Use BVH" << std::endl;
+                std::exit(1);
+            }
+
             int isect_count[img->width][img->height];
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {
@@ -108,16 +114,17 @@ class Render {
                     float v = -(2.0f*j - img->height)/img->height;
                     Ray ray = cam->getRay(u, v);
                     Hit res;
-                    prims->intersect(ray, res);
-                    isect_count[i][j] = prims->bvh->intersect_count;
+                    bvh->intersect(ray, res);
+                    isect_count[i][j] = bvh->intersect_count;
                 }
                 if(omp_get_thread_num() == 0)
                     std::cout << progressbar(i, img->width) << " " << percentage(i, img->width) << "\r" << std::flush;
             }
 
+            int max_isect_count = bvh->maximum_intersect_count;
             for(int i = 0; i < img->width; i++) {
                 for(int j = 0; j < img->height; j++) {
-                    float ratio = (float)isect_count[i][j]/prims->bvh->maximum_intersect_count;
+                    float ratio = (float)isect_count[i][j]/max_isect_count;
                     RGB col = RGB(0, ratio, 0);
                     img->setPixel(i, j, col);
                 }

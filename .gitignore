@@ -4,4 +4,6 @@
 *.jpg
 *.obj
 *.prof
+*.dot
+*.eps
 tiny_obj_loader.h

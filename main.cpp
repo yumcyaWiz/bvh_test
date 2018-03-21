@@ -23,7 +23,7 @@ int main() {
     std::cout << cam->camRight << std::endl;
     std::cout << cam->camUp << std::endl;
 
-    Primitives* prims = new Primitives();
+    BVH* prims = new BVH(4, BVH_PARTITION_TYPE::SAH);
     
     /*
     for(int i = 0; i < 1000; i++) {
@@ -39,7 +39,7 @@ int main() {
     //prims->add(new Sphere(Vec3(0, 5, 0), 1.0f));
     Timer timer;
     timer.start();
-    prims->constructBVH(4, BVH_PARTITION_TYPE::SAH);
+    prims->constructBVH();
     timer.stop();
 
     int samples = 100;

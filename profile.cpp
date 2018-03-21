@@ -24,12 +24,12 @@ int main() {
 
     Camera cam(Vec3(0, 5, -10), Vec3(0, 0, 1), 1.0f);
 
-    Primitives prims;
+    BVH prims(4, BVH_PARTITION_TYPE::SAH);
     prims.loadObj(Vec3(0), 1.0f, "dragon.obj");
 
     Timer timer;
     timer.start();
-    prims.constructBVH(4, BVH_PARTITION_TYPE::SAH);
+    prims.constructBVH();
     timer.stop("BVH Construction:");
 
     Hit res;
@@ -57,7 +57,7 @@ int main() {
     }
     ProfilerStop();
     timer.stop("Rendering Finished:");
-    std::cout << "Max Intersection Count:" << prims.bvh->maximum_intersect_count << std::endl;
+    std::cout << "Max Intersection Count:" << prims.maximum_intersect_count << std::endl;
     std::cout << "Total Ray Count:" << ray_count << std::endl;
     
     img.gamma_correction();

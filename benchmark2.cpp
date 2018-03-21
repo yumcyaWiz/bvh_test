@@ -23,12 +23,12 @@ int main() {
 
     Camera cam(Vec3(0, 5, -10), Vec3(0, 0, 1), 1.0f);
 
-    Primitives prims;
+    BVH prims(4, BVH_PARTITION_TYPE::SAH);
     prims.loadObj(Vec3(0), 1.0f, "dragon.obj");
 
     Timer timer;
     timer.start();
-    prims.constructBVH(4, BVH_PARTITION_TYPE::SAH);
+    prims.constructBVH();
     timer.stop("BVH Construction:");
 
     int nTest = 100;
@@ -55,7 +55,7 @@ int main() {
         const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         t += elapsed;
     }
-    std::cout << "Max Intersection Count:" << prims.bvh->maximum_intersect_count << std::endl;
+    std::cout << "Max Intersection Count:" << prims.maximum_intersect_count << std::endl;
     std::cout << "Total Ray Count:" << ray_count << std::endl;
     std::cout << "Benchmark:" << t/nTest << "ms" << std::endl;
     

@@ -9,6 +9,91 @@
 #include "sampler.h"
 
 
+class Primitives {
+    public:
+        //primitives array
+        std::vector<std::shared_ptr<Primitive>> prims;
+
+
+        Primitives() {};
+        Primitives(const std::vector<std::shared_ptr<Primitive>> &_prims) : prims(_prims) {};
+        virtual ~Primitives() {};
+
+
+        //add primitive
+        void add(Primitive* prim) {
+            prims.push_back(std::shared_ptr<Primitive>(prim));
+        };
+
+        //load obj file and add triangles
+        void loadObj(const Vec3& center, float scale, const std::string& filename) {
+            tinyobj::attrib_t attrib;
+            std::vector<tinyobj::shape_t> shapes;
+            std::vector<tinyobj::material_t> materials;
+
+            std::string err;
+            bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename.c_str());
+            if(!err.empty())
+                std::cerr << err << std::endl;
+            if(!ret)
+                std::exit(1);
+
+            int face_count = 0;
+            int vertex_count = 0;
+            for(size_t s = 0; s < shapes.size(); s++) {
+                size_t index_offset = 0;
+                for(size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+                    int fv = shapes[s].mesh.num_face_vertices[f];
+                    std::vector<Vec3> vertex;
+                    for(size_t v = 0; v < fv; v++) {
+                        tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+                        tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
+                        tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
+                        tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
+                        vertex.push_back(scale*Vec3((float)vx, (float)vy, (float)vz));
+                        vertex_count++;
+                    }
+                    index_offset += fv;
+                    prims.push_back(std::shared_ptr<Triangle>(new Triangle(center + vertex[0], center + vertex[1], center + vertex[2])));
+                    face_count++;
+                }
+            }
+            std::cout << "face:" << face_count << std::endl;
+            std::cout << "vertex:" << vertex_count << std::endl;
+        };
+
+        virtual bool intersect(Ray& ray, Hit& res) = 0;
+
+        //linear(O(n)) intersection algorithm
+        bool intersect_linear(const Ray& ray, Hit& res) const {
+            bool hit = false;
+            res.t = ray.tmax;
+            for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                Hit res2;
+                if((*itr)->intersect(ray, res2)) {
+                    hit = true;
+                    if(res2.t < res.t)
+                        res = res2;
+                }
+            }
+            return hit;
+        };
+
+        //primitives bounding box
+        AABB aabb() const {
+            AABB bbox;
+            for(auto itr = prims.begin(); itr != prims.end(); itr++) {
+                bbox = mergeAABB(bbox, (*itr)->aabb());
+            }
+            return bbox;
+        };
+};
+
+
+//BVH Partition type
+//EQSIZE: equally sized partition
+//CENTER: center paritioning
+//SAH: partition using Surface Area Heuristics
 enum class BVH_PARTITION_TYPE {
     EQSIZE,
     CENTER,
@@ -16,7 +101,7 @@ enum class BVH_PARTITION_TYPE {
 };
 
 
-class BVH {
+class BVH : public Primitives {
     public:
         //BVH Node Data Structure
         struct BVHNode {
@@ -121,8 +206,6 @@ class BVH {
 
         //bvh root node
         BVHNode* bvh_root;
-        //primitives array
-        std::vector<std::shared_ptr<Primitive>> prims;
         //the maximum number of primitives in leaf node
         int maxPrimsInLeaf;
         //bvh partition type
@@ -162,13 +245,7 @@ class BVH {
         //std::vector<std::shared_ptr<AABB>> linearNodeAABBs;
 
 
-        BVH(std::vector<std::shared_ptr<Primitive>> &_prims, int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : prims(_prims), maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
-            //if primitives is empty, terminate
-            if(_prims.size() == 0) {
-                std::cerr << "Primitives is empty!" << std::endl;
-                std::exit(1);
-            }
-
+        BVH(int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
             //initialize statistic members
             totalNodes = 0;
             totalLeaves = 0;
@@ -178,18 +255,38 @@ class BVH {
             intersect_count = 0;
             prim_intersect_count = 0;
             maximum_intersect_count = 0;
+        };
+        BVH(std::vector<std::shared_ptr<Primitive>> &_prims, int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) : Primitives(_prims), maxPrimsInLeaf(maxPrimsInLeaf), ptype(ptype) {
+            //initialize statistic members
+            totalNodes = 0;
+            totalLeaves = 0;
+            xsplitCount = 0;
+            ysplitCount = 0;
+            zsplitCount = 0;
+            intersect_count = 0;
+            prim_intersect_count = 0;
+            maximum_intersect_count = 0;
+        };
+
+
+        void constructBVH() {
+            //if primitives is empty, terminate
+            if(prims.size() == 0) {
+                std::cerr << "Primitives is empty!" << std::endl;
+                std::exit(1);
+            }
 
             //initialize BVHPrimitiveInfo
-            std::vector<BVHPrimitiveInfo> primitiveInfo(_prims.size());
-            for(size_t i = 0; i < _prims.size(); i++) {
-                primitiveInfo[i] = BVHPrimitiveInfo(i, _prims[i]->aabb());
+            std::vector<BVHPrimitiveInfo> primitiveInfo(prims.size());
+            for(size_t i = 0; i < prims.size(); i++) {
+                primitiveInfo[i] = BVHPrimitiveInfo(i, prims[i]->aabb());
             }
 
             //ordered primitives so that leaf nodes can access to the primitive
             std::vector<std::shared_ptr<Primitive>> orderedPrims;
 
             //constructBVH
-            bvh_root = makeBVHNode(0, _prims.size(), primitiveInfo, orderedPrims, ptype, &totalNodes, &totalLeaves);
+            bvh_root = makeBVHNode(0, prims.size(), primitiveInfo, orderedPrims, ptype, &totalNodes, &totalLeaves);
             //swap prims with orderedPrims;
             prims.swap(orderedPrims);
 
@@ -944,82 +1041,4 @@ class BVH_array {
 */
 
 
-class Primitives {
-    public:
-        std::vector<std::shared_ptr<Primitive>> prims;
-        std::shared_ptr<BVH> bvh;
-
-        Primitives() {};
-
-        void add(Primitive* prim) {
-            prims.push_back(std::shared_ptr<Primitive>(prim));
-        };
-        void loadObj(const Vec3& center, float scale, const std::string& filename) {
-            tinyobj::attrib_t attrib;
-            std::vector<tinyobj::shape_t> shapes;
-            std::vector<tinyobj::material_t> materials;
-
-            std::string err;
-            bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename.c_str());
-            if(!err.empty())
-                std::cerr << err << std::endl;
-            if(!ret)
-                std::exit(1);
-
-            int face_count = 0;
-            int vertex_count = 0;
-            for(size_t s = 0; s < shapes.size(); s++) {
-                size_t index_offset = 0;
-                for(size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-                    int fv = shapes[s].mesh.num_face_vertices[f];
-                    std::vector<Vec3> vertex;
-                    for(size_t v = 0; v < fv; v++) {
-                        tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-                        tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
-                        tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
-                        tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
-                        vertex.push_back(scale*Vec3((float)vx, (float)vy, (float)vz));
-                        vertex_count++;
-                    }
-                    index_offset += fv;
-                    prims.push_back(std::shared_ptr<Triangle>(new Triangle(center + vertex[0], center + vertex[1], center + vertex[2])));
-                    face_count++;
-                }
-            }
-            std::cout << "face:" << face_count << std::endl;
-            std::cout << "vertex:" << vertex_count << std::endl;
-        };
-
-        void constructBVH(int maxPrimsInLeaf, BVH_PARTITION_TYPE ptype) {
-            bvh = std::shared_ptr<BVH>(new BVH(prims, maxPrimsInLeaf, ptype));
-        };
-        bool intersect(Ray& ray, Hit& res) const {
-            return bvh->intersect(ray, res);
-        };
-        bool intersect_linear(const Ray& ray, Hit& res) const {
-            bool hit = false;
-            res.t = ray.tmax;
-            for(auto itr = prims.begin(); itr != prims.end(); itr++) {
-                Hit res2;
-                if((*itr)->intersect(ray, res2)) {
-                    hit = true;
-                    if(res2.t < res.t)
-                        res = res2;
-                }
-            }
-            return hit;
-        };
-        /*
-        bool intersect_visualize(Ray& ray, Hit& res, bool &edge) const {
-            return bvh->intersect_visualize(ray, res, edge);
-        };
-        */
-        AABB aabb() const {
-            AABB bbox;
-            for(auto itr = prims.begin(); itr != prims.end(); itr++) {
-                bbox = mergeAABB(bbox, (*itr)->aabb());
-            }
-            return bbox;
-        };
-};
 #endif
