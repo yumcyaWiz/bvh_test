@@ -565,6 +565,17 @@ class BVH : public Primitives {
 };
 
 
+class QBVH : public Primitives {
+    public:
+        struct QBVHNode {
+            float bbox[4*2*3];
+            int child[4];
+            int axis0, axis1, axis2;
+            int fill;
+        };
+};
+
+
 /*
 class BVH {
     private:
